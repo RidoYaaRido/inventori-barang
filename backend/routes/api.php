@@ -31,8 +31,6 @@ Route::prefix('v1')->group(function () {
 
     // Protected routes (require authentication)
     Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/stock-ins/{stockIn}/upload', [\App\Http\Controllers\Api\V1\StockInController::class, 'uploadBukti']);
-        Route::post('/stock-outs/{stockOut}/upload', [\App\Http\Controllers\Api\V1\StockOutController::class, 'uploadBukti']);
         Route::post('/auth/logout', \App\Http\Controllers\Api\V1\AuthController::class . '@logout');
         Route::get('/auth/me', \App\Http\Controllers\Api\V1\AuthController::class . '@me');
         Route::put('/auth/profile', \App\Http\Controllers\Api\V1\AuthController::class . '@updateProfile');
