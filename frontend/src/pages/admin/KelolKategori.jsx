@@ -1,1 +1,0 @@
-export default function KelolKategori() { return <div>Kelol Kategori</div> }
