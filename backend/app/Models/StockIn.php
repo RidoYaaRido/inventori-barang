@@ -10,15 +10,14 @@ class StockIn extends Model
     use HasFactory;
 
     protected $fillable = [
-    'item_id',
-    'user_id',
-    'quantity',
-    'reference_number',
-    'notes',
-    'bukti_path', 
-    'status',
-    'received_at'
-];
+        'item_id',
+        'user_id',
+        'quantity',
+        'reference_number',
+        'notes',
+        'status',
+        'received_at'
+    ];
 
     protected $casts = [
         'received_at' => 'datetime',

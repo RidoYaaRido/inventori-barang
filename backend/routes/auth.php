@@ -1,3 +1,0 @@
-<?php
-
-// Auth routes placeholder

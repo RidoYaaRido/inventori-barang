@@ -33,6 +33,7 @@ class StockInController
 
         $stockIn = StockIn::create($validated);
 
+        // Update item stock
         $item = Item::find($validated['item_id']);
         $item->increment('stock_quantity', $validated['quantity']);
 
@@ -59,6 +60,7 @@ class StockInController
             'received_at' => 'nullable|date',
         ]);
 
+        // Handle quantity changes
         if (isset($validated['quantity']) && $validated['quantity'] != $stockIn->quantity) {
             $difference = $validated['quantity'] - $stockIn->quantity;
             $item = $stockIn->item;
@@ -75,32 +77,14 @@ class StockInController
 
     public function destroy(StockIn $stockIn)
     {
+        // Revert stock changes
         $item = $stockIn->item;
         $item->decrement('stock_quantity', $stockIn->quantity);
+
         $stockIn->delete();
 
         return response()->json([
             'message' => 'Stock in deleted successfully',
-        ]);
-    }
-
-    public function uploadBukti(Request $request, StockIn $stockIn)
-    {
-        $request->validate([
-            'bukti' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
-        ]);
-
-        if ($stockIn->bukti_path && \Storage::disk('public')->exists($stockIn->bukti_path)) {
-            \Storage::disk('public')->delete($stockIn->bukti_path);
-        }
-
-        $path = $request->file('bukti')->store('bukti/stock-in', 'public');
-        $stockIn->update(['bukti_path' => $path]);
-
-        return response()->json([
-            'message' => 'Bukti uploaded successfully',
-            'bukti_path' => $path,
-            'bukti_url' => asset('storage/' . $path),
         ]);
     }
 }
