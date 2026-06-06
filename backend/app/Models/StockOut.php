@@ -10,14 +10,15 @@ class StockOut extends Model
     use HasFactory;
 
     protected $fillable = [
-        'item_id',
-        'user_id',
-        'quantity',
-        'reference_number',
-        'notes',
-        'status',
-        'released_at'
-    ];
+    'item_id',
+    'user_id',
+    'quantity',
+    'reference_number',
+    'notes',
+    'bukti_path', 
+    'status',
+    'released_at'
+];
 
     protected $casts = [
         'released_at' => 'datetime',
