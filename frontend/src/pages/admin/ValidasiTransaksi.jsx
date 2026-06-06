@@ -1,0 +1,1 @@
+export default function ValidasiTransaksi() { return <div>Validasi</div> }

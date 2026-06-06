@@ -1,0 +1,1 @@
+export default function KelolStaff() { return <div>Kelol Staff</div> }
