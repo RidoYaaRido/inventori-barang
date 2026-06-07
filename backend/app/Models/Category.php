@@ -2,21 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Category extends Model
 {
-    use HasFactory;
+    protected $table = 'categories';
 
-    protected $fillable = ['name', 'description', 'is_active'];
-
-    protected $casts = [
-        'is_active' => 'boolean',
+    protected $fillable = [
+        'nama_kategori',
+        'deskripsi',
     ];
 
-    public function items()
+    public function barang()
     {
-        return $this->hasMany(Item::class);
+        return $this->hasMany(Barang::class, 'category_id');
     }
 }

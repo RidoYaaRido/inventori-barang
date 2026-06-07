@@ -2,32 +2,71 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\ActivityLog;
+use App\Http\Controllers\Controller;
+use App\Models\BarangMasuk;
+use App\Models\BarangKeluar;
 use Illuminate\Http\Request;
 
-class ActivityLogController
+class ActivityLogController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $query = ActivityLog::with('user');
+        $masuk = BarangMasuk::with(['barang', 'user'])
+            ->latest()->take(10)->get()
+            ->map(fn($item) => [
+                'jenis'   => 'Masuk',
+                'barang'  => $item->barang->nama_barang,
+                'jumlah'  => $item->jumlah,
+                'user'    => $item->user->name,
+                'tanggal' => $item->tanggal_masuk,
+                'status'  => $item->status,
+            ]);
 
-        if ($request->has('action')) {
-            $query->where('action', $request->get('action'));
-        }
+        $keluar = BarangKeluar::with(['barang', 'user'])
+            ->latest()->take(10)->get()
+            ->map(fn($item) => [
+                'jenis'   => 'Keluar',
+                'barang'  => $item->barang->nama_barang,
+                'jumlah'  => $item->jumlah,
+                'user'    => $item->user->name,
+                'tanggal' => $item->tanggal,
+                'status'  => $item->status,
+            ]);
 
-        if ($request->has('user_id')) {
-            $query->where('user_id', $request->get('user_id'));
-        }
+        $logs = $masuk->merge($keluar)
+            ->sortByDesc('tanggal')
+            ->take(20)
+            ->values();
 
         return response()->json([
-            'activity_logs' => $query->latest()->paginate(20),
+            'success' => true,
+            'data'    => $logs,
         ]);
     }
 
-    public function show(ActivityLog $activityLog)
+    public function show($id)
     {
+        $masuk = BarangMasuk::with(['barang', 'user'])->find($id);
+
+        if ($masuk) {
+            return response()->json([
+                'success' => true,
+                'data'    => $masuk,
+            ]);
+        }
+
+        $keluar = BarangKeluar::with(['barang', 'user'])->find($id);
+
+        if ($keluar) {
+            return response()->json([
+                'success' => true,
+                'data'    => $keluar,
+            ]);
+        }
+
         return response()->json([
-            'activity_log' => $activityLog->load('user'),
-        ]);
+            'success' => false,
+            'message' => 'Log tidak ditemukan.',
+        ], 404);
     }
 }
