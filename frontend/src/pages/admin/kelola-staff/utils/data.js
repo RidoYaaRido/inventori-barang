@@ -1,0 +1,76 @@
+const INITIAL_STAFF = [
+  {
+    id: "STAFF-1",
+    name: "Rian Hidayat",
+    email: "rian.hidayat@inventarispro.com",
+    phone: "+62 812-3456-7890",
+    division: "Manajer Gudang Timur",
+    role: "Warehouse Staff",
+    status: "aktif",
+    joinDate: "2025-01-15",
+    avatar: "RH",
+    avatarBg: "#dbeafe",
+    avatarColor: "#1d4ed8",
+  },
+  {
+    id: "STAFF-2",
+    name: "Siti Rahma",
+    email: "siti.rahma@inventarispro.com",
+    phone: "+62 821-9876-5432",
+    division: "Staf Logistik",
+    role: "Warehouse Staff",
+    status: "aktif",
+    joinDate: "2025-03-20",
+    avatar: "SR",
+    avatarBg: "#fce7f3",
+    avatarColor: "#be185d",
+  },
+  {
+    id: "STAFF-3",
+    name: "Budi Santoso",
+    email: "budi.santoso@inventarispro.com",
+    phone: "+62 813-1111-2222",
+    division: "Pusat Keuangan & IT",
+    role: "Administrator",
+    status: "aktif",
+    joinDate: "2024-08-10",
+    avatar: "BS",
+    avatarBg: "#d1fae5",
+    avatarColor: "#065f46",
+  },
+  {
+    id: "STAFF-4",
+    name: "Lutfi Hakim",
+    email: "lutfi.hakim@inventarispro.com",
+    phone: "+62 811-2233-4455",
+    division: "Manajer Gudang Barat",
+    role: "Warehouse Staff",
+    status: "nonaktif",
+    joinDate: "2024-11-01",
+    avatar: "LH",
+    avatarBg: "#fef3c7",
+    avatarColor: "#92400e",
+  },
+  {
+    id: "STAFF-5",
+    name: "Dewi Kusuma",
+    email: "dewi.kusuma@inventarispro.com",
+    phone: "+62 857-6655-4433",
+    division: "Staf Pengadaan",
+    role: "Viewer",
+    status: "aktif",
+    joinDate: "2025-05-03",
+    avatar: "DK",
+    avatarBg: "#ede9fe",
+    avatarColor: "#6d28d9",
+  },
+];
+
+const ROLES = ["Warehouse Staff", "Administrator"];
+
+const roleMeta = {
+  "Administrator":   { bg: "#ede9fe", color: "#6d28d9" },
+  "Warehouse Staff": { bg: "#e0f2fe", color: "#0369a1" },
+};
+
+export { INITIAL_STAFF, ROLES, roleMeta };
