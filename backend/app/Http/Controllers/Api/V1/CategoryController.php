@@ -2,54 +2,59 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
-class CategoryController
+class CategoryController extends Controller
 {
     public function index()
     {
+        $categories = Category::withCount('barang')->get();
+
         return response()->json([
-            'categories' => Category::where('is_active', true)->get(),
+            'success' => true,
+            'data'    => $categories,
         ]);
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:categories',
-            'description' => 'nullable|string',
+        $request->validate([
+            'nama_kategori' => 'required|string|max:255|unique:categories,nama_kategori',
+            'deskripsi'     => 'nullable|string',
         ]);
 
-        $category = Category::create($validated);
+        $category = Category::create($request->only('nama_kategori', 'deskripsi'));
 
         return response()->json([
-            'message' => 'Category created successfully',
-            'category' => $category,
-        ], Response::HTTP_CREATED);
+            'success' => true,
+            'message' => 'Kategori berhasil ditambahkan.',
+            'data'    => $category,
+        ], 201);
     }
 
     public function show(Category $category)
     {
         return response()->json([
-            'category' => $category,
+            'success' => true,
+            'data'    => $category->load('barang'),
         ]);
     }
 
     public function update(Request $request, Category $category)
     {
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:255|unique:categories,name,' . $category->id,
-            'description' => 'nullable|string',
-            'is_active' => 'sometimes|boolean',
+        $request->validate([
+            'nama_kategori' => 'required|string|max:255|unique:categories,nama_kategori,' . $category->id,
+            'deskripsi'     => 'nullable|string',
         ]);
 
-        $category->update($validated);
+        $category->update($request->only('nama_kategori', 'deskripsi'));
 
         return response()->json([
-            'message' => 'Category updated successfully',
-            'category' => $category,
+            'success' => true,
+            'message' => 'Kategori berhasil diperbarui.',
+            'data'    => $category,
         ]);
     }
 
@@ -58,7 +63,8 @@ class CategoryController
         $category->delete();
 
         return response()->json([
-            'message' => 'Category deleted successfully',
+            'success' => true,
+            'message' => 'Kategori berhasil dihapus.',
         ]);
     }
 }

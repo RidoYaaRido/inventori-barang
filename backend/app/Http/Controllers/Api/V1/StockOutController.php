@@ -2,106 +2,72 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\Item;
-use App\Models\StockOut;
+use App\Http\Controllers\Controller;
+use App\Models\Barang;
+use App\Models\BarangKeluar;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
-class StockOutController
+class StockOutController extends Controller
 {
     public function index()
     {
+        $stockOuts = BarangKeluar::with(['barang', 'user'])
+            ->latest()->paginate(10);
+
         return response()->json([
-            'stock_outs' => StockOut::with(['item', 'user'])
-                ->latest()
-                ->paginate(15),
+            'success' => true,
+            'data'    => $stockOuts,
         ]);
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'item_id' => 'required|exists:items,id',
-            'quantity' => 'required|integer|min:1',
-            'reference_number' => 'required|string|unique:stock_outs',
-            'notes' => 'nullable|string',
-            'released_at' => 'nullable|date',
+        $request->validate([
+            'barang_id'      => 'required|exists:barang,id',
+            'jumlah'         => 'required|integer|min:1',
+            'tanggal'        => 'required|date',
+            'keterangan'     => 'nullable|string',
+            'divisi'         => 'nullable|string|max:255',
+            'bukti_transaksi'=> 'nullable|string',
         ]);
 
-        $item = Item::find($validated['item_id']);
+        $barang = Barang::findOrFail($request->barang_id);
 
-        // Check stock availability
-        if ($item->stock_quantity < $validated['quantity']) {
+        if ($barang->stok < $request->jumlah) {
             return response()->json([
-                'message' => 'Insufficient stock',
-                'available' => $item->stock_quantity,
-                'requested' => $validated['quantity'],
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+                'success' => false,
+                'message' => 'Stok tidak mencukupi.',
+            ], 422);
         }
 
-        $validated['user_id'] = $request->user()->id;
-        $validated['status'] = 'completed';
+        DB::transaction(function () use ($request, $barang) {
+            BarangKeluar::create([
+                'barang_id'       => $request->barang_id,
+                'user_id'         => Auth::id(),
+                'jumlah'          => $request->jumlah,
+                'tanggal'         => $request->tanggal,
+                'keterangan'      => $request->keterangan,
+                'divisi'          => $request->divisi,
+                'bukti_transaksi' => $request->bukti_transaksi,
+                'status'          => 'pending',
+            ]);
 
-        $stockOut = StockOut::create($validated);
-
-        // Update item stock
-        $item->decrement('stock_quantity', $validated['quantity']);
+            $barang->decrement('stok', $request->jumlah);
+        });
 
         return response()->json([
-            'message' => 'Stock out recorded successfully',
-            'stock_out' => $stockOut->load(['item', 'user']),
-        ], Response::HTTP_CREATED);
+            'success' => true,
+            'message' => 'Barang keluar berhasil dicatat.',
+        ], 201);
     }
 
-    public function show(StockOut $stockOut)
+    public function show(BarangKeluar $stockOut)
     {
         return response()->json([
-            'stock_out' => $stockOut->load(['item', 'user']),
-        ]);
-    }
-
-    public function update(Request $request, StockOut $stockOut)
-    {
-        $validated = $request->validate([
-            'quantity' => 'sometimes|integer|min:1',
-            'reference_number' => 'sometimes|string|unique:stock_outs,reference_number,' . $stockOut->id,
-            'notes' => 'nullable|string',
-            'status' => 'sometimes|in:pending,completed,cancelled',
-            'released_at' => 'nullable|date',
-        ]);
-
-        // Handle quantity changes
-        if (isset($validated['quantity']) && $validated['quantity'] != $stockOut->quantity) {
-            $difference = $validated['quantity'] - $stockOut->quantity;
-            $item = $stockOut->item;
-
-            if ($difference > 0 && $item->stock_quantity < $difference) {
-                return response()->json([
-                    'message' => 'Insufficient stock',
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            $item->decrement('stock_quantity', $difference);
-        }
-
-        $stockOut->update($validated);
-
-        return response()->json([
-            'message' => 'Stock out updated successfully',
-            'stock_out' => $stockOut->load(['item', 'user']),
-        ]);
-    }
-
-    public function destroy(StockOut $stockOut)
-    {
-        // Revert stock changes
-        $item = $stockOut->item;
-        $item->increment('stock_quantity', $stockOut->quantity);
-
-        $stockOut->delete();
-
-        return response()->json([
-            'message' => 'Stock out deleted successfully',
+            'success' => true,
+            'data'    => $stockOut->load(['barang', 'user']),
         ]);
     }
 }
