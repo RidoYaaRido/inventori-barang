@@ -46,6 +46,7 @@ function Login() {
       const message =
         loginError.response?.data?.message ||
         loginError.response?.data?.errors?.email?.[0] ||
+        loginError.message ||
         'Login gagal. Periksa email dan password Anda.'
 
       setError(message)
@@ -162,7 +163,7 @@ function Login() {
                         id="login-password"
                         name="password"
                         onChange={handleChange}
-                        placeholder="Masukkan password"
+                        placeholder=""
                         required
                         type={showPassword ? 'text' : 'password'}
                         value={formData.password}
@@ -225,24 +226,10 @@ function Login() {
                 <p className="auth-footer-text">
                   Belum punya akun?{' '}
                   <Link to="/register" className="auth-link">
-                    Daftar sekarang
+                    Daftar Jadi Staff
                   </Link>
                 </p>
 
-                {/* Demo credentials hint */}
-                <div className="mt-4 p-3" style={{
-                  borderRadius: '12px',
-                  background: 'rgba(6, 182, 212, 0.06)',
-                  border: '1px solid rgba(6, 182, 212, 0.1)',
-                }}>
-                  <p style={{ color: '#06b6d4', fontSize: '11px', fontWeight: 700, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    🔑 Demo Credentials
-                  </p>
-                  <div style={{ display: 'grid', gap: '4px', fontSize: '12px', color: '#94a3b8' }}>
-                    <span><strong style={{ color: '#cbd5e1' }}>Admin:</strong> admin@inventory.local / password</span>
-                    <span><strong style={{ color: '#cbd5e1' }}>Staff:</strong> staff@inventory.local / password</span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>

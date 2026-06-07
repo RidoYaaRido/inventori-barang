@@ -5,66 +5,148 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $categories = Category::withCount('barang')->get();
+        $query = Category::query()
+            ->withCount('items')
+            ->latest();
 
-        return response()->json([
-            'success' => true,
-            'data'    => $categories,
-        ]);
+        if ($request->filled('is_active')) {
+            $query->where('is_active', $request->boolean('is_active'));
+        }
+
+        return $this->successResponse(
+            'Data berhasil diambil',
+            $query->get()
+        );
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'nama_kategori' => 'required|string|max:255|unique:categories,nama_kategori',
-            'deskripsi'     => 'nullable|string',
+        if ($response = $this->ensureAdmin($request)) {
+            return $response;
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => ['required', 'string', 'max:255', 'unique:categories,name'],
+            'description' => ['nullable', 'string'],
+            'is_active' => ['sometimes', 'boolean'],
         ]);
 
-        $category = Category::create($request->only('nama_kategori', 'deskripsi'));
+        if ($validator->fails()) {
+            return $this->validationErrorResponse($validator);
+        }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Kategori berhasil ditambahkan.',
-            'data'    => $category,
-        ], 201);
+        $category = Category::create($validator->validated());
+
+        return $this->successResponse(
+            'Kategori berhasil dibuat',
+            $category,
+            Response::HTTP_CREATED
+        );
     }
 
-    public function show(Category $category)
+    public function show($id)
+    {
+        $category = Category::with('items')->find($id);
+
+        if (!$category) {
+            return $this->notFoundResponse();
+        }
+
+        return $this->successResponse('Data berhasil diambil', $category);
+    }
+
+    public function update(Request $request, $id)
+    {
+        if ($response = $this->ensureAdmin($request)) {
+            return $response;
+        }
+
+        $category = Category::find($id);
+
+        if (!$category) {
+            return $this->notFoundResponse();
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('categories', 'name')->ignore($category->id),
+            ],
+            'description' => ['nullable', 'string'],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
+
+        if ($validator->fails()) {
+            return $this->validationErrorResponse($validator);
+        }
+
+        $category->update($validator->validated());
+
+        return $this->successResponse('Kategori berhasil diperbarui', $category);
+    }
+
+    public function destroy(Request $request, $id)
+    {
+        if ($response = $this->ensureAdmin($request)) {
+            return $response;
+        }
+
+        $category = Category::withCount('items')->find($id);
+
+        if (!$category) {
+            return $this->notFoundResponse();
+        }
+
+        $category->update(['is_active' => false]);
+
+        return $this->successResponse('Kategori berhasil dinonaktifkan', $category);
+    }
+
+    private function ensureAdmin(Request $request)
+    {
+        if ($request->user()?->role === 'admin') {
+            return null;
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Akses ditolak. Hanya admin yang dapat melakukan aksi ini.',
+        ], Response::HTTP_FORBIDDEN);
+    }
+
+    private function successResponse(string $message, $data = null, int $status = Response::HTTP_OK)
     {
         return response()->json([
             'success' => true,
-            'data'    => $category->load('barang'),
-        ]);
+            'message' => $message,
+            'data' => $data,
+        ], $status);
     }
 
-    public function update(Request $request, Category $category)
+    private function validationErrorResponse($validator)
     {
-        $request->validate([
-            'nama_kategori' => 'required|string|max:255|unique:categories,nama_kategori,' . $category->id,
-            'deskripsi'     => 'nullable|string',
-        ]);
-
-        $category->update($request->only('nama_kategori', 'deskripsi'));
-
         return response()->json([
-            'success' => true,
-            'message' => 'Kategori berhasil diperbarui.',
-            'data'    => $category,
-        ]);
+            'success' => false,
+            'message' => 'Validasi gagal',
+            'errors' => $validator->errors(),
+        ], Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
-    public function destroy(Category $category)
+    private function notFoundResponse()
     {
-        $category->delete();
-
         return response()->json([
-            'success' => true,
-            'message' => 'Kategori berhasil dihapus.',
-        ]);
+            'success' => false,
+            'message' => 'Data tidak ditemukan',
+        ], Response::HTTP_NOT_FOUND);
     }
 }

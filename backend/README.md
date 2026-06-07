@@ -21,6 +21,108 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
+## Inventory API Curl Examples
+
+Base URL:
+
+```bash
+http://localhost:8000/api/v1
+```
+
+Login admin:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@inventory.local","password":"password123"}'
+```
+
+Set token:
+
+```bash
+TOKEN="paste_token_dari_response_login"
+```
+
+Get categories:
+
+```bash
+curl http://localhost:8000/api/v1/categories \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Create category:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/categories \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Gudang","description":"Kategori perlengkapan gudang","is_active":true}'
+```
+
+Get items:
+
+```bash
+curl "http://localhost:8000/api/v1/items?per_page=10" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Create item:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/items \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"category_id":1,"name":"Scanner Barcode","sku":"PKT-SCN-001","description":"Scanner barcode USB","unit_price":450000,"stock_quantity":4,"unit":"unit","is_active":true}'
+```
+
+Search item:
+
+```bash
+curl "http://localhost:8000/api/v1/items?search=laptop" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Low stock item:
+
+```bash
+curl http://localhost:8000/api/v1/items/low-stock \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Upload bukti stock in:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/stock-ins/1/upload \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "attachment=@/path/to/bukti-stock-in.pdf"
+```
+
+Upload bukti stock out:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/stock-outs/1/upload \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "attachment=@/path/to/bukti-stock-out.jpg"
+```
+
+Test stock out dengan quantity melebihi stok:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/stock-outs \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"item_id":1,"quantity":999999,"reference_number":"SO-TEST-OVER-STOCK","notes":"Test stok tidak cukup"}'
+```
+
+Test update quantity stock out:
+
+```bash
+curl -X PUT http://localhost:8000/api/v1/stock-outs/1 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"quantity":2,"reference_number":"SO-UPDATED-001","notes":"Update jumlah barang keluar"}'
+```
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.

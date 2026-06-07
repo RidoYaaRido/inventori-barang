@@ -5,6 +5,7 @@ const axiosClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 60000,
 })
 
 axiosClient.interceptors.request.use((config) => {
@@ -20,6 +21,10 @@ axiosClient.interceptors.request.use((config) => {
 axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.code === 'ECONNABORTED') {
+      error.message = 'Backend terlalu lama merespons. Coba lagi sebentar.'
+    }
+
     if (error.response?.status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
