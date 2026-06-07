@@ -2,89 +2,64 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\Item;
-use App\Models\StockIn;
+use App\Http\Controllers\Controller;
+use App\Models\Barang;
+use App\Models\BarangMasuk;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
-class StockInController
+class StockInController extends Controller
 {
     public function index()
     {
+        $stockIns = BarangMasuk::with(['barang', 'user'])
+            ->latest()->paginate(10);
+
         return response()->json([
-            'stock_ins' => StockIn::with(['item', 'user'])
-                ->latest()
-                ->paginate(15),
+            'success' => true,
+            'data'    => $stockIns,
         ]);
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'item_id' => 'required|exists:items,id',
-            'quantity' => 'required|integer|min:1',
-            'reference_number' => 'required|string|unique:stock_ins',
-            'notes' => 'nullable|string',
-            'received_at' => 'nullable|date',
+        $request->validate([
+            'barang_id'      => 'required|exists:barang,id',
+            'jumlah'         => 'required|integer|min:1',
+            'tanggal_masuk'  => 'required|date',
+            'keterangan'     => 'nullable|string',
+            'supplier'       => 'nullable|string|max:255',
+            'bukti_transaksi'=> 'nullable|string',
         ]);
 
-        $validated['user_id'] = $request->user()->id;
-        $validated['status'] = 'completed';
+        DB::transaction(function () use ($request) {
+            BarangMasuk::create([
+                'barang_id'       => $request->barang_id,
+                'user_id'         => Auth::id(),
+                'jumlah'          => $request->jumlah,
+                'tanggal_masuk'   => $request->tanggal_masuk,
+                'keterangan'      => $request->keterangan,
+                'supplier'        => $request->supplier,
+                'bukti_transaksi' => $request->bukti_transaksi,
+                'status'          => 'pending',
+            ]);
 
-        $stockIn = StockIn::create($validated);
-
-        // Update item stock
-        $item = Item::find($validated['item_id']);
-        $item->increment('stock_quantity', $validated['quantity']);
+            Barang::find($request->barang_id)
+                ->increment('stok', $request->jumlah);
+        });
 
         return response()->json([
-            'message' => 'Stock in recorded successfully',
-            'stock_in' => $stockIn->load(['item', 'user']),
-        ], Response::HTTP_CREATED);
+            'success' => true,
+            'message' => 'Barang masuk berhasil dicatat.',
+        ], 201);
     }
 
-    public function show(StockIn $stockIn)
+    public function show(BarangMasuk $stockIn)
     {
         return response()->json([
-            'stock_in' => $stockIn->load(['item', 'user']),
-        ]);
-    }
-
-    public function update(Request $request, StockIn $stockIn)
-    {
-        $validated = $request->validate([
-            'quantity' => 'sometimes|integer|min:1',
-            'reference_number' => 'sometimes|string|unique:stock_ins,reference_number,' . $stockIn->id,
-            'notes' => 'nullable|string',
-            'status' => 'sometimes|in:pending,completed,cancelled',
-            'received_at' => 'nullable|date',
-        ]);
-
-        // Handle quantity changes
-        if (isset($validated['quantity']) && $validated['quantity'] != $stockIn->quantity) {
-            $difference = $validated['quantity'] - $stockIn->quantity;
-            $item = $stockIn->item;
-            $item->increment('stock_quantity', $difference);
-        }
-
-        $stockIn->update($validated);
-
-        return response()->json([
-            'message' => 'Stock in updated successfully',
-            'stock_in' => $stockIn->load(['item', 'user']),
-        ]);
-    }
-
-    public function destroy(StockIn $stockIn)
-    {
-        // Revert stock changes
-        $item = $stockIn->item;
-        $item->decrement('stock_quantity', $stockIn->quantity);
-
-        $stockIn->delete();
-
-        return response()->json([
-            'message' => 'Stock in deleted successfully',
+            'success' => true,
+            'data'    => $stockIn->load(['barang', 'user']),
         ]);
     }
 }
