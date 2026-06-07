@@ -1,10 +1,12 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import ProtectedRoute from '../components/ProtectedRoute'
 import { AuthProvider } from '../context/AuthContext.jsx'
-import AdminLayout from '../layouts/AdminLayout'
 import AuthLayout from '../layouts/AuthLayout'
+import AdminLayout from '../layouts/AdminLayout'
 import StaffLayout from '../layouts/StaffLayout'
 import Login from '../pages/auth/Login'
+import Register from '../pages/auth/Register'
+import Dashboard from '../pages/Dashboard'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 import StaffDashboard from '../pages/staff/StaffDashboard'
 import ComingSoon from '../pages/ComingSoon'
@@ -31,10 +33,16 @@ function AppRouter() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          {/* ── Auth Routes (Public) ──────────────── */}
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
           </Route>
 
+          {/* ── Dashboard Redirect ────────────────── */}
+          <Route path="/dashboard" element={<Dashboard />} />
+
+          {/* ── Admin Routes (Protected) ──────────── */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route element={<AdminLayout />}>
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
@@ -45,6 +53,7 @@ function AppRouter() {
             </Route>
           </Route>
 
+          {/* ── Staff Routes (Protected) ──────────── */}
           <Route element={<ProtectedRoute allowedRoles={['staff']} />}>
             <Route element={<StaffLayout />}>
               <Route path="/staff/dashboard" element={<StaffDashboard />} />
@@ -55,6 +64,7 @@ function AppRouter() {
             </Route>
           </Route>
 
+          {/* ── Fallback Routes ───────────────────── */}
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
