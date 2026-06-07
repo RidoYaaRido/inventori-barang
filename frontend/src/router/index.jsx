@@ -7,17 +7,21 @@ import StaffLayout from '../layouts/StaffLayout'
 import Login from '../pages/auth/Login'
 import Register from '../pages/auth/Register'
 import Dashboard from '../pages/Dashboard'
-import AdminDashboard from '../pages/admin/AdminDashboard'
+
+// import admin components
+import AdminDashboard from '../pages/admin/dashboard-admin/AdminDashboard.jsx'
+import KelolaBarang from '../pages/admin/kelola-barang/ManageItems.jsx'
+
+// import staff componentsstaff
 import StaffDashboard from '../pages/staff/StaffDashboard'
 import ComingSoon from '../pages/ComingSoon'
 
 const adminComingSoonRoutes = [
-  '/admin/barang',
-  '/admin/kategori',
-  '/admin/staff',
+  '/admin/kelola-kategori',
+  '/admin/kelola-staff',
   '/admin/validasi-transaksi',
   '/admin/laporan',
-  '/admin/activity-log',
+  '/admin/log-aktivitas',
   '/admin/bantuan',
 ]
 
@@ -46,6 +50,7 @@ function AppRouter() {
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route element={<AdminLayout />}>
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/kelola-barang" element={<KelolaBarang />} />
               {adminComingSoonRoutes.map((path) => (
                 <Route element={<ComingSoon />} key={path} path={path} />
               ))}
