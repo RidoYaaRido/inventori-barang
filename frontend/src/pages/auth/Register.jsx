@@ -101,6 +101,7 @@ function Register() {
 
       const message =
         registerError.response?.data?.message ||
+        registerError.message ||
         'Registrasi gagal. Silakan coba lagi.'
 
       setError(message)

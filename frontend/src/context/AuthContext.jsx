@@ -20,6 +20,15 @@ const getStoredUser = () => {
   }
 }
 
+const getAuthPayload = (response) => {
+  const payload = response.data?.data || response.data
+
+  return {
+    token: payload?.token,
+    user: payload?.user,
+  }
+}
+
 /**
  * AuthProvider — menyediakan state autentikasi ke seluruh aplikasi.
  *
@@ -39,7 +48,11 @@ export function AuthProvider({ children }) {
 
     try {
       const response = await loginRequest(credentials)
-      const { token: authToken, user: authUser } = response.data
+      const { token: authToken, user: authUser } = getAuthPayload(response)
+
+      if (!authToken || !authUser) {
+        throw new Error('Response login tidak valid dari backend.')
+      }
 
       localStorage.setItem('token', authToken)
       localStorage.setItem('user', JSON.stringify(authUser))
@@ -58,7 +71,11 @@ export function AuthProvider({ children }) {
 
     try {
       const response = await registerRequest(payload)
-      const { token: authToken, user: authUser } = response.data
+      const { token: authToken, user: authUser } = getAuthPayload(response)
+
+      if (!authToken || !authUser) {
+        throw new Error('Response register tidak valid dari backend.')
+      }
 
       localStorage.setItem('token', authToken)
       localStorage.setItem('user', JSON.stringify(authUser))
