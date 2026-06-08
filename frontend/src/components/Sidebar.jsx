@@ -12,12 +12,12 @@ const staffMenus = [
 
 const adminMenus = [
   { icon: 'grid', label: 'Dashboard', path: '/admin/dashboard' },
-  { icon: 'box', label: 'Kelola Barang', path: '/admin/barang' },
-  { icon: 'category', label: 'Kelola Kategori', path: '/admin/kategori' },
-  { icon: 'staff', label: 'Kelola Staff', path: '/admin/staff' },
+  { icon: 'box', label: 'Kelola Barang', path: '/admin/kelola-barang' },
+  { icon: 'category', label: 'Kelola Kategori', path: '/admin/kelola-kategori' },
+  { icon: 'staff', label: 'Kelola Staff', path: '/admin/kelola-staff' },
   { icon: 'check', label: 'Validasi Transaksi', path: '/admin/validasi-transaksi' },
   { icon: 'report', label: 'Laporan', path: '/admin/laporan' },
-  { icon: 'history', label: 'Activity Log', path: '/admin/activity-log' },
+  { icon: 'history', label: 'Log Aktivitas', path: '/admin/log-aktivitas' },
 ]
 
 const iconPaths = {
