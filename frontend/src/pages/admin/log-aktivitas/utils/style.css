@@ -1,0 +1,235 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
+
+/* --- Base Layout (Samakan dengan Kelola Staff) --- */
+.log-page-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 50%, #f8fafc 100%);
+  font-family: 'DM Sans', sans-serif;
+  padding: 32px 36px;
+  color: #0f172a;
+}
+
+/* --- Typography --- */
+.font-sora {
+  font-family: 'Sora', sans-serif;
+}
+
+.font-mono {
+  font-family: monospace;
+}
+
+/* --- Header Section --- */
+.log-header {
+  margin-bottom: 28px;
+}
+
+.log-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.log-subtitle {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* --- Filter Bar Section (Model Light Card) --- */
+.filter-card {
+  background: #fff;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 20px;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 16px rgba(15, 23, 42, 0.05);
+}
+
+.filter-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.filter-btn-group {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-btn {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+}
+
+.filter-btn:hover {
+  color: #0d9488;
+  border-color: #0d9488;
+  background: #f0fdfa;
+}
+
+.filter-btn.active {
+  background: linear-gradient(135deg, #0d9488, #0891b2);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
+}
+
+/* --- Logs Container Card (Model Light Card) --- */
+.logs-card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 2px 16px rgba(15, 23, 42, 0.07);
+  border: 1.5px solid #f1f5f9;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Custom Scrollbar */
+.logs-card::-webkit-scrollbar {
+  width: 6px;
+}
+.logs-card::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+.logs-card::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+/* --- Individual Log Row --- */
+.log-item-row {
+  background: #fff;
+  border: 1px solid #f1f5f9;
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center; /* Diubah ke center agar sejajar rapi seperti row staff */
+  gap: 16px;
+  transition: all 0.15s ease;
+}
+
+.log-item-row:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateX(4px);
+}
+
+/* Action Icon Box (Mirip lingkaran avatar profil) */
+.log-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Skema warna icon berdasarkan kategori (Meniru style badge staff) */
+.log-icon-box.profile {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+.log-icon-box.create {
+  background: #d1fae5;
+  color: #065f46;
+}
+.log-icon-box.delete {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.log-icon-box.update {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+.log-icon-box.validate {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Meta Content Area */
+.log-content-area {
+  flex-grow: 1;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 2fr; /* Menggunakan Grid agar berjejer rapi ke kanan layaknya table */
+  align-items: center;
+  gap: 16px;
+}
+
+.log-actor-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.log-actor-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.log-action-message {
+  font-size: 13px;
+  color: #475569;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Target Area Block */
+.log-target-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.log-target-badge {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  color: #6d28d9;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Kategori Badge Luar */
+.log-category-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.06em;
+  width: fit-content;
+}
+
+.log-category-badge.PROFILE { background: #ede9fe; color: #6d28d9; }
+.log-category-badge.CREATE { background: #d1fae5; color: #065f46; }
+.log-category-badge.DELETE { background: #fee2e2; color: #991b1b; }
+.log-category-badge.UPDATE { background: #e0f2fe; color: #0369a1; }
+.log-category-badge.VALIDATE { background: #fef3c7; color: #92400e; }
+
+/* Timestamp Area */
+.log-time-cell {
+  font-size: 13px;
+  color: #64748b;
+  white-space: nowrap;
+  text-align: right;
+}

@@ -1,52 +1,37 @@
 <?php
-
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'role', 'is_active'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, Notifiable;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected $fillable = [
+        'name', 'email', 'password', 'role', 'phone', 'avatar'
+    ];
+
+    protected $hidden = ['password', 'remember_token'];
+
+    public function barangMasuk()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'is_active' => 'boolean',
-        ];
+        return $this->hasMany(BarangMasuk::class);
     }
 
-    /**
-     * Relationships
-     */
-    public function stockIns()
+    public function barangKeluar()
     {
-        return $this->hasMany(StockIn::class);
+        return $this->hasMany(BarangKeluar::class);
     }
 
-    public function stockOuts()
+    public function isAdmin()
     {
-        return $this->hasMany(StockOut::class);
+        return $this->role === 'admin';
     }
 
-    public function activityLogs()
+    public function isStaff()
     {
-        return $this->hasMany(ActivityLog::class);
+        return $this->role === 'staff';
     }
 }

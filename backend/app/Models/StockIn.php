@@ -15,6 +15,7 @@ class StockIn extends Model
         'quantity',
         'reference_number',
         'notes',
+        'attachment_path',
         'status',
         'received_at'
     ];

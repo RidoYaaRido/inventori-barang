@@ -1,0 +1,334 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
+
+/* --- Base Layout & Page Container --- */
+.kategori-page-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 50%, #f8fafc 100%);
+  font-family: 'DM Sans', sans-serif;
+  padding: 32px 36px;
+  color: #0f172a;
+}
+
+/* --- Typography Utilities --- */
+.font-sora {
+  font-family: 'Sora', sans-serif;
+}
+
+.font-mono {
+  font-family: monospace;
+}
+
+/* --- Header Section --- */
+.kategori-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 28px;
+}
+
+.kategori-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.kategori-subtitle {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* --- Button Primary (Samakan dengan Kelola Staff) --- */
+.btn-kategori-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.3);
+  transition: transform .15s, box-shadow .15s;
+}
+
+.btn-kategori-add:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(13, 148, 136, 0.4);
+}
+
+/* --- Grid System Utama (Maksimal 3 Kolom per Baris) --- */
+.kategori-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+/* Responsive fallback jika layar mengecil */
+@media (max-width: 1024px) {
+  .kategori-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .kategori-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Kategori Card Style (Tema Terang Bersih) --- */
+.kategori-card {
+  background: #ffffff;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 220px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.kategori-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  border-color: #e2e8f0;
+}
+
+/* Top Row Card (Ikon & Tombol Delete) */
+.card-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+/* Wrapper Ikon Kategori */
+.kategori-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Warna variasi ikon */
+.kategori-icon-wrapper.elektronik { background: #e0f2fe; color: #0369a1; }
+.kategori-icon-wrapper.furnitur { background: #fef3c7; color: #92400e; }
+.kategori-icon-wrapper.atk { background: #d1fae5; color: #065f46; }
+.kategori-icon-wrapper.jaringan { background: #ede9fe; color: #6d28d9; }
+
+/* Tombol Aksi Hapus Card */
+.btn-delete-card {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.btn-delete-card:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* Body Card */
+.card-body {
+  flex-grow: 1;
+  margin-bottom: 20px;
+}
+
+.card-title {
+  margin: 0 0 6px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.card-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* Bottom Row Card (Footer Card) */
+.card-footer-bar {
+  border-top: 1.5px solid #f1f5f9;
+  padding-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-link-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.sku-badge {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+/* --- Modal New Category Layer (Samakan dengan Style Kelola Staff) --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content-box {
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px 36px;
+  width: 460px;
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.18);
+  position: relative;
+}
+
+.modal-title {
+  margin: 0 0 24px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.form-input, .form-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  color: #0f172a;
+  transition: border-color .2s;
+}
+
+.form-textarea {
+  resize: none;
+  height: 90px;
+}
+
+.form-input:focus, .form-textarea:focus {
+  border-color: #0d9488;
+}
+
+/* Icon Selector Layout */
+.icon-grid-selector {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.icon-option-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.icon-option-btn:hover {
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+/* Kondisi Aktif untuk Pilihan Ikon */
+.icon-option-btn.elektronik.active { background: #e0f2fe; color: #0369a1; border-color: #0369a1; }
+.icon-option-btn.furnitur.active { background: #fef3c7; color: #92400e; border-color: #92400e; }
+.icon-option-btn.atk.active { background: #d1fae5; color: #065f46; border-color: #065f46; }
+.icon-option-btn.jaringan.active { background: #ede9fe; color: #6d28d9; border-color: #6d28d9; }
+
+/* Modal Buttons Footer */
+.modal-actions-group {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.btn-modal-cancel {
+  flex: 1;
+  padding: 11px 0;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.btn-modal-submit {
+  flex: 1;
+  padding: 11px 0;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #0d9488, #0891b2);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.btn-modal-close-icon {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
