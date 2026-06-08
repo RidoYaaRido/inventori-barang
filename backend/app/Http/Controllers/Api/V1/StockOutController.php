@@ -2,106 +2,232 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\Item;
-use App\Models\StockOut;
+use App\Http\Controllers\Controller;
+use App\Models\Barang;
+use App\Models\BarangKeluar;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
-class StockOutController
+class StockOutController extends Controller
 {
     public function index()
     {
-        return response()->json([
-            'stock_outs' => StockOut::with(['item', 'user'])
-                ->latest()
-                ->paginate(15),
-        ]);
+        $stockOuts = StockOut::with(['item', 'user'])
+            ->latest()
+            ->paginate(15);
+
+        return $this->successResponse('Data berhasil diambil', $stockOuts);
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'item_id' => 'required|exists:items,id',
-            'quantity' => 'required|integer|min:1',
-            'reference_number' => 'required|string|unique:stock_outs',
-            'notes' => 'nullable|string',
-            'released_at' => 'nullable|date',
+        $validator = Validator::make($request->all(), [
+            'item_id' => ['required', 'exists:items,id'],
+            'quantity' => ['required', 'integer', 'min:1'],
+            'reference_number' => ['required', 'string', 'unique:stock_outs,reference_number'],
+            'notes' => ['nullable', 'string'],
+            'released_at' => ['nullable', 'date'],
         ]);
 
-        $item = Item::find($validated['item_id']);
-
-        // Check stock availability
-        if ($item->stock_quantity < $validated['quantity']) {
-            return response()->json([
-                'message' => 'Insufficient stock',
-                'available' => $item->stock_quantity,
-                'requested' => $validated['quantity'],
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        if ($validator->fails()) {
+            return $this->validationErrorResponse($validator);
         }
 
-        $validated['user_id'] = $request->user()->id;
-        $validated['status'] = 'completed';
+        $validated = $validator->validated();
+        $item = Item::find($validated['item_id']);
+
+        if ($item->stock_quantity < $validated['quantity']) {
+            return $this->stockErrorResponse(
+                'Stok barang tidak mencukupi',
+                [
+                    'available' => $item->stock_quantity,
+                    'requested' => $validated['quantity'],
+                ]
+            );
+        }
+
+        DB::transaction(function () use ($request, $barang) {
+            BarangKeluar::create([
+                'barang_id'       => $request->barang_id,
+                'user_id'         => Auth::id(),
+                'jumlah'          => $request->jumlah,
+                'tanggal'         => $request->tanggal,
+                'keterangan'      => $request->keterangan,
+                'divisi'          => $request->divisi,
+                'bukti_transaksi' => $request->bukti_transaksi,
+                'status'          => 'pending',
+            ]);
 
         $stockOut = StockOut::create($validated);
 
-        // Update item stock
         $item->decrement('stock_quantity', $validated['quantity']);
 
-        return response()->json([
-            'message' => 'Stock out recorded successfully',
-            'stock_out' => $stockOut->load(['item', 'user']),
-        ], Response::HTTP_CREATED);
+        return $this->successResponse(
+            'Barang keluar berhasil dicatat',
+            $stockOut->load(['item', 'user']),
+            Response::HTTP_CREATED
+        );
     }
 
-    public function show(StockOut $stockOut)
+    public function show($id)
     {
-        return response()->json([
-            'stock_out' => $stockOut->load(['item', 'user']),
-        ]);
+        $stockOut = StockOut::with(['item', 'user'])->find($id);
+
+        if (!$stockOut) {
+            return $this->notFoundResponse();
+        }
+
+        return $this->successResponse('Data berhasil diambil', $stockOut);
     }
 
-    public function update(Request $request, StockOut $stockOut)
+    public function update(Request $request, $id)
     {
-        $validated = $request->validate([
-            'quantity' => 'sometimes|integer|min:1',
-            'reference_number' => 'sometimes|string|unique:stock_outs,reference_number,' . $stockOut->id,
-            'notes' => 'nullable|string',
-            'status' => 'sometimes|in:pending,completed,cancelled',
-            'released_at' => 'nullable|date',
+        $stockOut = StockOut::with('item')->find($id);
+
+        if (!$stockOut) {
+            return $this->notFoundResponse();
+        }
+
+        $validator = Validator::make($request->all(), [
+            'quantity' => ['sometimes', 'integer', 'min:1'],
+            'reference_number' => [
+                'sometimes',
+                'string',
+                Rule::unique('stock_outs', 'reference_number')->ignore($stockOut->id),
+            ],
+            'notes' => ['nullable', 'string'],
+            'status' => ['sometimes', 'in:pending,completed,cancelled'],
+            'released_at' => ['nullable', 'date'],
         ]);
 
-        // Handle quantity changes
-        if (isset($validated['quantity']) && $validated['quantity'] != $stockOut->quantity) {
+        if ($validator->fails()) {
+            return $this->validationErrorResponse($validator);
+        }
+
+        $validated = $validator->validated();
+
+        if (array_key_exists('quantity', $validated) && $validated['quantity'] !== $stockOut->quantity) {
             $difference = $validated['quantity'] - $stockOut->quantity;
-            $item = $stockOut->item;
 
-            if ($difference > 0 && $item->stock_quantity < $difference) {
-                return response()->json([
-                    'message' => 'Insufficient stock',
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            if ($difference > 0 && $stockOut->item->stock_quantity < $difference) {
+                return $this->stockErrorResponse(
+                    'Stok barang tidak mencukupi',
+                    [
+                        'available' => $stockOut->item->stock_quantity,
+                        'requested_additional' => $difference,
+                    ]
+                );
             }
 
-            $item->decrement('stock_quantity', $difference);
+            if ($difference > 0) {
+                $stockOut->item->decrement('stock_quantity', $difference);
+            } else {
+                $stockOut->item->increment('stock_quantity', abs($difference));
+            }
         }
 
         $stockOut->update($validated);
 
-        return response()->json([
-            'message' => 'Stock out updated successfully',
-            'stock_out' => $stockOut->load(['item', 'user']),
+        return $this->successResponse(
+            'Barang keluar berhasil diperbarui',
+            $stockOut->fresh(['item', 'user'])
+        );
+    }
+
+    public function destroy($id)
+    {
+        $stockOut = StockOut::with('item')->find($id);
+
+        if (!$stockOut) {
+            return $this->notFoundResponse();
+        }
+
+        $stockOut->item->increment('stock_quantity', $stockOut->quantity);
+        $stockOut->delete();
+
+        return $this->successResponse('Barang keluar berhasil dihapus');
+    }
+
+    public function uploadProof(Request $request, $id)
+    {
+        $stockOut = StockOut::find($id);
+
+        if (!$stockOut) {
+            return $this->notFoundResponse();
+        }
+
+        $validator = Validator::make($request->all(), [
+            'attachment' => ['required', 'file', 'max:2048'],
+        ]);
+
+        if ($validator->fails()) {
+            return $this->uploadErrorResponse($validator->errors());
+        }
+
+        $file = $request->file('attachment');
+        $allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        if (!in_array($extension, $allowedExtensions, true)) {
+            return $this->uploadErrorResponse([
+                'attachment' => ['File harus berekstensi pdf, jpg, jpeg, atau png.'],
+            ]);
+        }
+
+        $path = $file->store('transactions', 'public');
+        $publicPath = 'storage/' . $path;
+
+        $stockOut->update(['attachment_path' => $publicPath]);
+
+        return $this->successResponse('Bukti transaksi berhasil diupload', [
+            'id' => $stockOut->id,
+            'attachment_path' => $stockOut->attachment_path,
         ]);
     }
 
-    public function destroy(StockOut $stockOut)
+    private function successResponse(string $message, $data = null, int $status = Response::HTTP_OK)
     {
-        // Revert stock changes
-        $item = $stockOut->item;
-        $item->increment('stock_quantity', $stockOut->quantity);
-
-        $stockOut->delete();
-
         return response()->json([
-            'message' => 'Stock out deleted successfully',
-        ]);
+            'success' => true,
+            'message' => $message,
+            'data' => $data,
+        ], $status);
+    }
+
+    private function validationErrorResponse($validator)
+    {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validasi gagal',
+            'errors' => $validator->errors(),
+        ], Response::HTTP_UNPROCESSABLE_ENTITY);
+    }
+
+    private function uploadErrorResponse($errors)
+    {
+        return response()->json([
+            'success' => false,
+            'message' => 'Upload gagal',
+            'errors' => $errors,
+        ], Response::HTTP_UNPROCESSABLE_ENTITY);
+    }
+
+    private function stockErrorResponse(string $message, array $errors)
+    {
+        return response()->json([
+            'success' => false,
+            'message' => $message,
+            'errors' => $errors,
+        ], Response::HTTP_UNPROCESSABLE_ENTITY);
+    }
+
+    private function notFoundResponse()
+    {
+        return response()->json([
+            'success' => false,
+            'message' => 'Data tidak ditemukan',
+        ], Response::HTTP_NOT_FOUND);
     }
 }

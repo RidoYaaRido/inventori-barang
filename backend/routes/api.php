@@ -35,6 +35,10 @@ Route::prefix('v1')->group(function () {
         Route::get('/auth/me', \App\Http\Controllers\Api\V1\AuthController::class . '@me');
         Route::put('/auth/profile', \App\Http\Controllers\Api\V1\AuthController::class . '@updateProfile');
 
+        Route::get('/items/low-stock', \App\Http\Controllers\Api\V1\ItemController::class . '@lowStock');
+        Route::post('/stock-ins/{id}/upload', \App\Http\Controllers\Api\V1\StockInController::class . '@uploadProof');
+        Route::post('/stock-outs/{id}/upload', \App\Http\Controllers\Api\V1\StockOutController::class . '@uploadProof');
+
         // Resource routes
         Route::apiResources([
             'categories' => \App\Http\Controllers\Api\V1\CategoryController::class,

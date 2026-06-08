@@ -13,23 +13,27 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Admin user
-        User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@inventory.local',
-            'password' => bcrypt('password123'),
-            'role' => 'admin',
-            'is_active' => true,
-            'email_verified_at' => now(),
-        ]);
+        User::updateOrCreate(
+            ['email' => 'admin@inventory.local'],
+            [
+                'name' => 'Admin User',
+                'password' => bcrypt('password123'),
+                'role' => 'admin',
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]
+        );
 
         // Staff user
-        User::create([
-            'name' => 'Staff User',
-            'email' => 'staff1@inventory.local',
-            'password' => bcrypt('password123'),
-            'role' => 'staff',
-            'is_active' => true,
-            'email_verified_at' => now(),
-        ]);
+        User::updateOrCreate(
+            ['email' => 'staff1@inventory.local'],
+            [
+                'name' => 'Staff User',
+                'password' => bcrypt('password123'),
+                'role' => 'staff',
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]
+        );
     }
 }

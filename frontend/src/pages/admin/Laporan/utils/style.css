@@ -1,0 +1,303 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+/* --- Base Container --- */
+.laporan-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 50%, #f8fafc 100%);
+  font-family: 'DM Sans', sans-serif;
+  padding: 32px 36px;
+  color: #0f172a;
+}
+
+.font-sora { font-family: 'Sora', sans-serif; }
+.font-mono { font-family: monospace; }
+
+/* --- Header Section --- */
+.laporan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 28px;
+}
+
+.laporan-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.laporan-subtitle {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-export {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-export.csv {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  color: #475569;
+}
+
+.btn-export.csv:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.btn-export.pdf {
+  background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+  border: none;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.25);
+}
+
+.btn-export.pdf:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(13, 148, 136, 0.35);
+}
+
+/* --- Stats Cards Grid (4 Kolom) --- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 1024px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.stat-card {
+  background: #ffffff;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 18px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+}
+
+.stat-icon-box {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Variasi Warna Icon Box Stat */
+.stat-card:nth-child(1) .stat-icon-box { background: #d1fae5; color: #065f46; }
+.stat-card:nth-child(2) .stat-icon-box { background: #f3e8ff; color: #6b21a8; }
+.stat-card:nth-child(3) .stat-icon-box { background: #e0f2fe; color: #0369a1; }
+.stat-card:nth-child(4) .stat-icon-box { background: #fef3c7; color: #92400e; }
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 4px;
+}
+
+/* --- Table Controls (Search & Filter Bar) --- */
+.table-controls-card {
+  background: #ffffff;
+  border: 1.5px solid #f1f5f9;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding: 18px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
+  border-bottom: none;
+}
+
+.search-wrapper {
+  position: relative;
+  width: 320px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px 10px 40px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.search-input:focus { border-color: #0d9488; }
+
+.flow-filter-group {
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 10px;
+  gap: 4px;
+}
+
+.btn-flow-filter {
+  background: transparent;
+  border: none;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s ease;
+}
+
+.btn-flow-filter.active {
+  background: #ffffff;
+  color: #0d9488;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+}
+
+/* --- Laporan Table Wrapper --- */
+.table-card-wrapper {
+  background: #ffffff;
+  border: 1.5px solid #f1f5f9;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.laporan-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.laporan-table th {
+  background: #f8fafc;
+  padding: 14px 24px;
+  font-weight: 700;
+  color: #64748b;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1.5px solid #f1f5f9;
+}
+
+.laporan-table td {
+  padding: 16px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.laporan-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.laporan-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
+/* Specific Column Styling */
+.td-kode-id {
+  font-weight: 700;
+  color: #7c3aed; /* Menjaga aksen ungu khas kode id di gambar asli */
+}
+
+.item-info-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-name {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.item-sub-id {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* --- Badges (Tipe Aliran & Status) --- */
+.badge-aliran {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0.03em;
+}
+
+.badge-aliran.masuk { background: #e0f2fe; color: #0369a1; }
+.badge-aliran.keluar { background: #f3e8ff; color: #6b21a8; }
+
+.badge-aliran::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.badge-aliran.masuk::before { background: #0284c7; }
+.badge-aliran.keluar::before { background: #a855f7; }
+
+.badge-status {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.badge-status.disetujui { background: #d1fae5; color: #065f46; }
+.badge-status.pending { background: #e2e8f0; color: #475569; }

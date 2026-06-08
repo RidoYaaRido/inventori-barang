@@ -1,0 +1,273 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+/* --- Base Layout --- */
+.validasi-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 50%, #f8fafc 100%);
+  font-family: 'DM Sans', sans-serif;
+  padding: 32px 36px;
+  color: #0f172a;
+}
+
+.font-sora { font-family: 'Sora', sans-serif; }
+.font-mono { font-family: monospace; }
+
+/* --- Header Section --- */
+.validasi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 28px;
+}
+
+.validasi-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.validasi-subtitle {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* --- Top Tabs (Antrean vs Riwayat) --- */
+.tab-actions-group {
+  display: flex;
+  background: #e2e8f0;
+  padding: 4px;
+  border-radius: 12px;
+  gap: 4px;
+}
+
+.btn-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  border-radius: 9px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s ease;
+}
+
+.btn-tab.active {
+  background: #ffffff;
+  color: #0d9488;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05);
+}
+
+.tab-badge {
+  background: #f0fdfa;
+  color: #0d9488;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.btn-tab.active .tab-badge {
+  background: #0d9488;
+  color: #ffffff;
+}
+
+/* --- Two-Column Split Layout --- */
+.split-layout-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* --- Left Column: List Antrean --- */
+.antrean-list-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.antrean-card-row {
+  background: #ffffff;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.antrean-card-row:hover, .antrean-card-row.selected {
+  border-color: #cbd5e1;
+  transform: translateX(2px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+}
+
+.antrean-card-row.selected {
+  border-color: #0d9488;
+  background: #f0fdfa;
+}
+
+/* Direction Indicator Icon Box */
+.direction-icon-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.direction-icon-box.masuk { background: #e0f2fe; color: #0369a1; }
+.direction-icon-box.keluar { background: #f3e8ff; color: #6b21a8; }
+
+/* Item Details Area */
+.item-meta-info {
+  flex-grow: 1;
+}
+
+.item-title-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.item-name-text {
+  font-weight: 700;
+  font-size: 15px;
+  color: #0f172a;
+}
+
+/* Badges */
+.badge-flow {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
+}
+.badge-flow.masuk { background: #d1fae5; color: #065f46; }
+.badge-flow.keluar { background: #fee2e2; color: #991b1b; }
+
+.item-sub-details {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 6px;
+  display: flex;
+  gap: 12px;
+}
+
+.sub-divider { color: #cbd5e1; }
+
+.row-date-text {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-right: 8px;
+}
+
+/* Row Action Buttons (Tolak / Setujui) */
+.row-actions-container {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-action-status {
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.btn-action-status.reject {
+  background: #fee2e2;
+  color: #ef4444;
+}
+.btn-action-status.reject:hover {
+  background: #fca5a5;
+  color: #991b1b;
+}
+
+.btn-action-status.approve {
+  background: #0d9488;
+  color: #ffffff;
+}
+.btn-action-status.approve:hover {
+  background: #0f766e;
+}
+
+/* --- Right Column: Detail Review Panel --- */
+.detail-review-panel {
+  background: #ffffff;
+  border: 1.5px dashed #cbd5e1; /* Sesuai border putus-putus di gambar */
+  border-radius: 20px;
+  padding: 32px 24px;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.detail-review-panel.has-content {
+  border-style: solid;
+  border-color: #f1f5f9;
+  justify-content: flex-start;
+  text-align: left;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+}
+
+.empty-state-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #334155;
+  margin: 12px 0 4px;
+}
+
+.empty-state-desc {
+  font-size: 13px;
+  color: #64748b;
+  max-width: 260px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Inside Active Panel Details */
+.panel-header-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+  border-bottom: 1.5px solid #f1f5f9;
+  padding-bottom: 12px;
+  width: 100%;
+}
+
+.detail-info-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.info-field-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.info-field-label { color: #64748b; font-weight: 500; }
+.info-field-value { color: #0f172a; font-weight: 600; }

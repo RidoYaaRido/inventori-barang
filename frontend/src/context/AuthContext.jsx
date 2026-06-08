@@ -1,7 +1,10 @@
 import { useCallback, useMemo, useState } from 'react'
-import { loginRequest, logoutRequest } from '../api/authApi'
+import { loginRequest, logoutRequest, registerRequest } from '../api/authApi'
 import { AuthContext } from './authCore'
 
+/**
+ * Membaca user dari localStorage dengan error handling.
+ */
 const getStoredUser = () => {
   const storedUser = localStorage.getItem('user')
 
@@ -17,25 +20,78 @@ const getStoredUser = () => {
   }
 }
 
+const getAuthPayload = (response) => {
+  const payload = response.data?.data || response.data
+
+  return {
+    token: payload?.token,
+    user: payload?.user,
+  }
+}
+
+/**
+ * AuthProvider — menyediakan state autentikasi ke seluruh aplikasi.
+ *
+ * Fitur:
+ * - Login & Register
+ * - Logout (clear localStorage + API call)
+ * - Auto-load dari localStorage saat init
+ * - Role-based access data (user.role)
+ */
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('token'))
   const [user, setUser] = useState(() => getStoredUser())
-  const isLoading = false
+  const [isLoading, setIsLoading] = useState(false)
 
   const login = useCallback(async (credentials) => {
-    const response = await loginRequest(credentials)
-    const { token: authToken, user: authUser } = response.data
+    setIsLoading(true)
 
-    localStorage.setItem('token', authToken)
-    localStorage.setItem('user', JSON.stringify(authUser))
+    try {
+      const response = await loginRequest(credentials)
+      const { token: authToken, user: authUser } = getAuthPayload(response)
 
-    setToken(authToken)
-    setUser(authUser)
+      if (!authToken || !authUser) {
+        throw new Error('Response login tidak valid dari backend.')
+      }
 
-    return authUser
+      localStorage.setItem('token', authToken)
+      localStorage.setItem('user', JSON.stringify(authUser))
+
+      setToken(authToken)
+      setUser(authUser)
+
+      return authUser
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  const register = useCallback(async (payload) => {
+    setIsLoading(true)
+
+    try {
+      const response = await registerRequest(payload)
+      const { token: authToken, user: authUser } = getAuthPayload(response)
+
+      if (!authToken || !authUser) {
+        throw new Error('Response register tidak valid dari backend.')
+      }
+
+      localStorage.setItem('token', authToken)
+      localStorage.setItem('user', JSON.stringify(authUser))
+
+      setToken(authToken)
+      setUser(authUser)
+
+      return authUser
+    } finally {
+      setIsLoading(false)
+    }
   }, [])
 
   const logout = useCallback(async () => {
+    setIsLoading(true)
+
     try {
       if (token) {
         await logoutRequest()
@@ -45,6 +101,7 @@ export function AuthProvider({ children }) {
       localStorage.removeItem('user')
       setToken(null)
       setUser(null)
+      setIsLoading(false)
     }
   }, [token])
 
@@ -55,9 +112,10 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(token && user),
       isLoading,
       login,
+      register,
       logout,
     }),
-    [token, user, isLoading, login, logout],
+    [token, user, isLoading, login, register, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

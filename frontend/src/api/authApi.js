@@ -1,17 +1,31 @@
-import axiosClient from './axiosClient'
+import axiosInstance from './axiosInstance'
 
+/**
+ * Login request
+ * @param {{ email: string, password: string }} credentials
+ */
 export const loginRequest = (credentials) => {
-  return axiosClient.post('/auth/login', credentials)
+  return axiosInstance.post('/auth/login', credentials)
 }
 
+/**
+ * Register request
+ * @param {{ name: string, email: string, password: string, password_confirmation: string }} payload
+ */
 export const registerRequest = (payload) => {
-  return axiosClient.post('/auth/register', payload)
+  return axiosInstance.post('/auth/register', payload)
 }
 
+/**
+ * Logout request
+ */
 export const logoutRequest = () => {
-  return axiosClient.post('/auth/logout')
+  return axiosInstance.post('/auth/logout')
 }
 
+/**
+ * Get current authenticated user
+ */
 export const getCurrentUserRequest = () => {
-  return axiosClient.get('/auth/me')
+  return axiosInstance.get('/auth/me')
 }
