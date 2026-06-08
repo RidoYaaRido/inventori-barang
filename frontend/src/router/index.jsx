@@ -7,6 +7,8 @@ import StaffLayout from '../layouts/StaffLayout'
 import Login from '../pages/auth/Login'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 import StaffDashboard from '../pages/staff/StaffDashboard'
+import ItemDetail from '../pages/staff/ItemDetail'
+import ItemList from '../pages/staff/ItemList'
 import ComingSoon from '../pages/ComingSoon'
 
 const adminComingSoonRoutes = [
@@ -20,7 +22,6 @@ const adminComingSoonRoutes = [
 ]
 
 const staffComingSoonRoutes = [
-  '/staff/barang',
   '/staff/barang-masuk',
   '/staff/barang-keluar',
   '/staff/profile',
@@ -48,6 +49,9 @@ function AppRouter() {
           <Route element={<ProtectedRoute allowedRoles={['staff']} />}>
             <Route element={<StaffLayout />}>
               <Route path="/staff/dashboard" element={<StaffDashboard />} />
+              <Route path="/staff/barang" element={<ItemList />} />
+              <Route path="/staff/data-barang" element={<ItemList />} />
+              <Route path="/staff/barang/:id" element={<ItemDetail />} />
               {staffComingSoonRoutes.map((path) => (
                 <Route element={<ComingSoon />} key={path} path={path} />
               ))}
