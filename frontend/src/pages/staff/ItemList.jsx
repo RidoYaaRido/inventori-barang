@@ -40,7 +40,7 @@ export default function ItemList() {
       <div className="d-flex flex-wrap justify-content-between gap-3 mb-3">
         <div>
           <h2>Daftar Barang</h2>
-          <p className="text-muted mb-0">Data barang real dari backend.</p>
+          <p className="text-muted mb-0">Data barang</p>
         </div>
         <input
           className="form-control"

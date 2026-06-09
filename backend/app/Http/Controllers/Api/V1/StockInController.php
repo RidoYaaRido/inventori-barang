@@ -14,32 +14,62 @@ use Illuminate\Validation\Rule;
 
 class StockInController extends Controller
 {
+    /**
+     * Helper: apakah user yang login adalah admin?
+     */
+    private function isAdmin(): bool
+    {
+        return auth()->user()->role === 'admin';
+    }
+
+    /**
+     * Helper: terapkan scope kepemilikan jika bukan admin.
+     * Admin → semua data. Staff → hanya miliknya sendiri.
+     */
+    private function ownedQuery()
+    {
+        $query = StockIn::query();
+
+        if (! $this->isAdmin()) {
+            $query->where('user_id', auth()->id());
+        }
+
+        return $query;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // INDEX  –  GET /api/v1/stock-ins
+    // ─────────────────────────────────────────────────────────────
     public function index()
     {
-        $stockIns = StockIn::with(['item', 'user'])
+        $stockIns = $this->ownedQuery()
+            ->with(['item', 'user'])
             ->latest()
             ->paginate(15);
 
         return $this->successResponse('Data berhasil diambil', $stockIns);
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // STORE  –  POST /api/v1/stock-ins
+    // ─────────────────────────────────────────────────────────────
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'item_id' => ['required', 'exists:items,id'],
-            'quantity' => ['required', 'integer', 'min:1'],
+            'item_id'          => ['required', 'exists:items,id'],
+            'quantity'         => ['required', 'integer', 'min:1'],
             'reference_number' => ['required', 'string', 'unique:stock_ins,reference_number'],
-            'notes' => ['nullable', 'string'],
-            'received_at' => ['nullable', 'date'],
+            'notes'            => ['nullable', 'string'],
+            'received_at'      => ['nullable', 'date'],
         ]);
 
         if ($validator->fails()) {
             return $this->validationErrorResponse($validator);
         }
 
-        $validated = $validator->validated();
-        $validated['user_id'] = $request->user()->id;
-        $validated['status'] = 'completed';
+        $validated             = $validator->validated();
+        $validated['user_id']  = $request->user()->id;
+        $validated['status']   = 'completed';
 
         $stockIn = StockIn::create($validated);
 
@@ -54,35 +84,45 @@ class StockInController extends Controller
         );
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // SHOW  –  GET /api/v1/stock-ins/{id}
+    // Staff hanya bisa melihat miliknya; admin bisa semua.
+    // ─────────────────────────────────────────────────────────────
     public function show($id)
     {
-        $stockIn = StockIn::with(['item', 'user'])->find($id);
+        $stockIn = $this->ownedQuery()
+            ->with(['item', 'user'])
+            ->find($id);
 
-        if (!$stockIn) {
+        if (! $stockIn) {
             return $this->notFoundResponse();
         }
 
         return $this->successResponse('Data berhasil diambil', $stockIn);
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // UPDATE  –  PUT /api/v1/stock-ins/{id}
+    // Staff hanya bisa mengubah miliknya sendiri.
+    // ─────────────────────────────────────────────────────────────
     public function update(Request $request, $id)
     {
-        $stockIn = StockIn::with('item')->find($id);
+        $stockIn = $this->ownedQuery()->with('item')->find($id);
 
-        if (!$stockIn) {
+        if (! $stockIn) {
             return $this->notFoundResponse();
         }
 
         $validator = Validator::make($request->all(), [
-            'quantity' => ['sometimes', 'integer', 'min:1'],
+            'quantity'         => ['sometimes', 'integer', 'min:1'],
             'reference_number' => [
                 'sometimes',
                 'string',
                 Rule::unique('stock_ins', 'reference_number')->ignore($stockIn->id),
             ],
-            'notes' => ['nullable', 'string'],
-            'status' => ['sometimes', 'in:pending,completed,cancelled'],
-            'received_at' => ['nullable', 'date'],
+            'notes'            => ['nullable', 'string'],
+            'status'           => ['sometimes', 'in:pending,completed,cancelled'],
+            'received_at'      => ['nullable', 'date'],
         ]);
 
         if ($validator->fails()) {
@@ -93,13 +133,13 @@ class StockInController extends Controller
 
         if (array_key_exists('quantity', $validated) && $validated['quantity'] !== $stockIn->quantity) {
             $difference = $validated['quantity'] - $stockIn->quantity;
-            $newStock = $stockIn->item->stock_quantity + $difference;
+            $newStock   = $stockIn->item->stock_quantity + $difference;
 
             if ($newStock < 0) {
                 return $this->stockErrorResponse(
                     'Stok barang tidak boleh menjadi negatif',
                     [
-                        'available' => $stockIn->item->stock_quantity,
+                        'available'  => $stockIn->item->stock_quantity,
                         'difference' => $difference,
                     ]
                 );
@@ -122,11 +162,15 @@ class StockInController extends Controller
         );
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // DESTROY  –  DELETE /api/v1/stock-ins/{id}
+    // Staff hanya bisa menghapus miliknya sendiri.
+    // ─────────────────────────────────────────────────────────────
     public function destroy($id)
     {
-        $stockIn = StockIn::with('item')->find($id);
+        $stockIn = $this->ownedQuery()->with('item')->find($id);
 
-        if (!$stockIn) {
+        if (! $stockIn) {
             return $this->notFoundResponse();
         }
 
@@ -135,7 +179,7 @@ class StockInController extends Controller
                 'Barang masuk tidak dapat dihapus karena stok akan menjadi negatif',
                 [
                     'available' => $stockIn->item->stock_quantity,
-                    'required' => $stockIn->quantity,
+                    'required'  => $stockIn->quantity,
                 ]
             );
         }
@@ -148,11 +192,15 @@ class StockInController extends Controller
         return $this->successResponse('Barang masuk berhasil dihapus');
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // UPLOAD PROOF  –  POST /api/v1/stock-ins/{id}/upload
+    // Staff hanya bisa upload bukti miliknya sendiri.
+    // ─────────────────────────────────────────────────────────────
     public function uploadProof(Request $request, $id)
     {
-        $stockIn = StockIn::find($id);
+        $stockIn = $this->ownedQuery()->find($id);
 
-        if (!$stockIn) {
+        if (! $stockIn) {
             return $this->notFoundResponse();
         }
 
@@ -164,47 +212,51 @@ class StockInController extends Controller
             return $this->uploadErrorResponse($validator->errors());
         }
 
-        $file = $request->file('attachment');
-        $allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
-        $extension = strtolower($file->getClientOriginalExtension());
+        $file               = $request->file('attachment');
+        $allowedExtensions  = ['pdf', 'jpg', 'jpeg', 'png'];
+        $extension          = strtolower($file->getClientOriginalExtension());
 
-        if (!in_array($extension, $allowedExtensions, true)) {
+        if (! in_array($extension, $allowedExtensions, true)) {
             return $this->uploadErrorResponse([
                 'attachment' => ['File harus berekstensi pdf, jpg, jpeg, atau png.'],
             ]);
         }
 
-        $path = $file->store('transactions', 'public');
+        $path       = $file->store('transactions', 'public');
         $publicPath = 'storage/' . $path;
 
         $stockIn->update(['attachment_path' => $publicPath]);
 
         return $this->successResponse('Bukti transaksi berhasil diupload', [
-            'id' => $stockIn->id,
+            'id'              => $stockIn->id,
             'attachment_path' => $stockIn->attachment_path,
         ]);
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // Private helpers
+    // ─────────────────────────────────────────────────────────────
 
     private function successResponse(string $message, $data = null, int $status = Response::HTTP_OK)
     {
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data' => $data,
+            'data'    => $data,
         ], $status);
     }
 
     private function writeActivityLog(Request $request, string $action, StockIn $stockIn, ?array $oldValues, ?array $newValues): void
     {
-        if (!Schema::hasTable('activity_logs')) {
+        if (! Schema::hasTable('activity_logs')) {
             return;
         }
 
         ActivityLog::create([
-            'user_id' => $request->user()->id,
-            'action' => $action,
+            'user_id'    => $request->user()->id,
+            'action'     => $action,
             'model_type' => StockIn::class,
-            'model_id' => $stockIn->id,
+            'model_id'   => $stockIn->id,
             'old_values' => $oldValues,
             'new_values' => $newValues,
             'ip_address' => $request->ip(),
@@ -217,7 +269,7 @@ class StockInController extends Controller
         return response()->json([
             'success' => false,
             'message' => 'Validasi gagal',
-            'errors' => $validator->errors(),
+            'errors'  => $validator->errors(),
         ], Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
@@ -226,7 +278,7 @@ class StockInController extends Controller
         return response()->json([
             'success' => false,
             'message' => 'Upload gagal',
-            'errors' => $errors,
+            'errors'  => $errors,
         ], Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
@@ -235,7 +287,7 @@ class StockInController extends Controller
         return response()->json([
             'success' => false,
             'message' => $message,
-            'errors' => $errors,
+            'errors'  => $errors,
         ], Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 

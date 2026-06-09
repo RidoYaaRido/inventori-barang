@@ -21,14 +21,14 @@ class AdminController extends Controller
     public function dashboard()
     {
         $data = [
-            'total_items' => Item::count(),
-            'total_categories' => Category::count(),
-            'total_staff' => User::where('role', 'staff')->where('is_active', true)->count(),
-            'total_stock_ins' => StockIn::count(),
-            'total_stock_outs' => StockOut::count(),
-            'low_stock_items' => Item::where('stock_quantity', '<', 5)->count(),
-            'recent_stock_ins' => StockIn::with(['item', 'user'])->latest()->take(5)->get(),
-            'recent_stock_outs' => StockOut::with(['item', 'user'])->latest()->take(5)->get(),
+            'total_items'        => Item::count(),
+            'total_categories'   => Category::count(),
+            'total_staff'        => User::where('role', 'staff')->where('is_active', true)->count(),
+            'total_stock_ins'    => StockIn::count(),
+            'total_stock_outs'   => StockOut::count(),
+            'low_stock_items'    => Item::with('category')->where('stock_quantity', '<', 5)->latest()->get(),
+            'recent_stock_ins'   => StockIn::with(['item', 'user'])->latest()->take(10)->get(),
+            'recent_stock_outs'  => StockOut::with(['item', 'user'])->latest()->take(10)->get(),
         ];
 
         return $this->successResponse('Dashboard admin berhasil diambil', $data);

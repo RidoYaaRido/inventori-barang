@@ -28,7 +28,22 @@ Base URL:
 ```bash
 http://localhost:8000/api/v1
 ```
+curl -i -X GET "https://genapaja.work.gd/api/v1/admin/reports/export" \
+  -H "Authorization: Bearer 44|eDXdc1kCZ3xtxLFMQrxLbrG6wiXwhYl0exP6X9mUc5dcf939" \
+  -H "Accept: application/json"
 
+curl -i -X GET "https://genapaja.work.gd/api/v1/admin/reports/export" \
+  -H "Authorization: Bearer 46|jWjQbBGBs1Fi9PgXREL8vxExcJkyHWN3DEcaEqNwb95b60d4" \
+  -H "Accept: application/json"
+
+
+curl.exe -i -X GET "http://127.0.0.1:8000/api/v1/stock-ins/5
+Authorization: Bearer 60|jui9Ny1TmdONiJJTzKUNlfxofQZ2OcJEljXiHxCqe4307465
+```bash
+curl -i -X GET "http://127.0.0.1:5173/api/v1/stock-ins/4" \
+  -H "Authorization: Bearer 60|jui9Ny1TmdONiJJTzKUNlfxofQZ2OcJEljXiHxCqe4307465" \
+  -H "Accept: application/json"
+```
 Login admin:
 
 ```bash

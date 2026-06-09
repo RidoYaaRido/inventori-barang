@@ -300,4 +300,7 @@
 }
 
 .badge-status.disetujui { background: #d1fae5; color: #065f46; }
+.badge-status.completed { background: #d1fae5; color: #065f46; }
 .badge-status.pending { background: #e2e8f0; color: #475569; }
+.badge-status.cancelled { background: #fee2e2; color: #991b1b; }
+.badge-status.ditolak { background: #fee2e2; color: #991b1b; }

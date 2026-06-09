@@ -35,7 +35,7 @@ export default function LogAktivitas() {
       <div className="d-flex flex-wrap justify-content-between gap-3 mb-3">
         <div>
           <h2>Activity Log</h2>
-          <p className="text-muted mb-0">Rekam aktivitas pengguna dari backend.</p>
+          <p className="text-muted mb-0">Rekam aktivitas pengguna</p>
         </div>
         <select className="form-select" style={{ maxWidth: 240 }} value={filter} onChange={(event) => setFilter(event.target.value)}>
           <option value="">Semua Action</option>

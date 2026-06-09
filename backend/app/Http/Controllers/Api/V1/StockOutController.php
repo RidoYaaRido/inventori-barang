@@ -14,23 +14,53 @@ use Illuminate\Validation\Rule;
 
 class StockOutController extends Controller
 {
+    /**
+     * Helper: apakah user yang login adalah admin?
+     */
+    private function isAdmin(): bool
+    {
+        return auth()->user()->role === 'admin';
+    }
+
+    /**
+     * Helper: terapkan scope kepemilikan jika bukan admin.
+     * Admin → semua data. Staff → hanya miliknya sendiri.
+     */
+    private function ownedQuery()
+    {
+        $query = StockOut::query();
+
+        if (! $this->isAdmin()) {
+            $query->where('user_id', auth()->id());
+        }
+
+        return $query;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // INDEX  –  GET /api/v1/stock-outs
+    // ─────────────────────────────────────────────────────────────
     public function index()
     {
-        $stockOuts = StockOut::with(['item', 'user'])
+        $stockOuts = $this->ownedQuery()
+            ->with(['item', 'user'])
             ->latest()
             ->paginate(15);
 
         return $this->successResponse('Data berhasil diambil', $stockOuts);
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // STORE  –  POST /api/v1/stock-outs
+    // ─────────────────────────────────────────────────────────────
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'item_id' => ['required', 'exists:items,id'],
-            'quantity' => ['required', 'integer', 'min:1'],
+            'item_id'          => ['required', 'exists:items,id'],
+            'quantity'         => ['required', 'integer', 'min:1'],
             'reference_number' => ['required', 'string', 'unique:stock_outs,reference_number'],
-            'notes' => ['nullable', 'string'],
-            'released_at' => ['nullable', 'date'],
+            'notes'            => ['nullable', 'string'],
+            'released_at'      => ['nullable', 'date'],
         ]);
 
         if ($validator->fails()) {
@@ -38,7 +68,7 @@ class StockOutController extends Controller
         }
 
         $validated = $validator->validated();
-        $item = Item::find($validated['item_id']);
+        $item      = Item::find($validated['item_id']);
 
         if ($item->stock_quantity < $validated['quantity']) {
             return $this->stockErrorResponse(
@@ -51,7 +81,7 @@ class StockOutController extends Controller
         }
 
         $validated['user_id'] = $request->user()->id;
-        $validated['status'] = 'completed';
+        $validated['status']  = 'completed';
 
         $stockOut = StockOut::create($validated);
         $item->decrement('stock_quantity', $validated['quantity']);
@@ -64,35 +94,45 @@ class StockOutController extends Controller
         );
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // SHOW  –  GET /api/v1/stock-outs/{id}
+    // Staff hanya bisa melihat miliknya; admin bisa semua.
+    // ─────────────────────────────────────────────────────────────
     public function show($id)
     {
-        $stockOut = StockOut::with(['item', 'user'])->find($id);
+        $stockOut = $this->ownedQuery()
+            ->with(['item', 'user'])
+            ->find($id);
 
-        if (!$stockOut) {
+        if (! $stockOut) {
             return $this->notFoundResponse();
         }
 
         return $this->successResponse('Data berhasil diambil', $stockOut);
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // UPDATE  –  PUT /api/v1/stock-outs/{id}
+    // Staff hanya bisa mengubah miliknya sendiri.
+    // ─────────────────────────────────────────────────────────────
     public function update(Request $request, $id)
     {
-        $stockOut = StockOut::with('item')->find($id);
+        $stockOut = $this->ownedQuery()->with('item')->find($id);
 
-        if (!$stockOut) {
+        if (! $stockOut) {
             return $this->notFoundResponse();
         }
 
         $validator = Validator::make($request->all(), [
-            'quantity' => ['sometimes', 'integer', 'min:1'],
+            'quantity'         => ['sometimes', 'integer', 'min:1'],
             'reference_number' => [
                 'sometimes',
                 'string',
                 Rule::unique('stock_outs', 'reference_number')->ignore($stockOut->id),
             ],
-            'notes' => ['nullable', 'string'],
-            'status' => ['sometimes', 'in:pending,completed,cancelled'],
-            'released_at' => ['nullable', 'date'],
+            'notes'            => ['nullable', 'string'],
+            'status'           => ['sometimes', 'in:pending,completed,cancelled'],
+            'released_at'      => ['nullable', 'date'],
         ]);
 
         if ($validator->fails()) {
@@ -108,7 +148,7 @@ class StockOutController extends Controller
                 return $this->stockErrorResponse(
                     'Stok barang tidak mencukupi',
                     [
-                        'available' => $stockOut->item->stock_quantity,
+                        'available'           => $stockOut->item->stock_quantity,
                         'requested_additional' => $difference,
                     ]
                 );
@@ -131,11 +171,15 @@ class StockOutController extends Controller
         );
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // DESTROY  –  DELETE /api/v1/stock-outs/{id}
+    // Staff hanya bisa menghapus miliknya sendiri.
+    // ─────────────────────────────────────────────────────────────
     public function destroy($id)
     {
-        $stockOut = StockOut::with('item')->find($id);
+        $stockOut = $this->ownedQuery()->with('item')->find($id);
 
-        if (!$stockOut) {
+        if (! $stockOut) {
             return $this->notFoundResponse();
         }
 
@@ -147,11 +191,15 @@ class StockOutController extends Controller
         return $this->successResponse('Barang keluar berhasil dihapus');
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // UPLOAD PROOF  –  POST /api/v1/stock-outs/{id}/upload
+    // Staff hanya bisa upload bukti miliknya sendiri.
+    // ─────────────────────────────────────────────────────────────
     public function uploadProof(Request $request, $id)
     {
-        $stockOut = StockOut::find($id);
+        $stockOut = $this->ownedQuery()->find($id);
 
-        if (!$stockOut) {
+        if (! $stockOut) {
             return $this->notFoundResponse();
         }
 
@@ -163,52 +211,56 @@ class StockOutController extends Controller
             return $this->uploadErrorResponse($validator->errors());
         }
 
-        $file = $request->file('attachment');
+        $file              = $request->file('attachment');
         $allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
-        $extension = strtolower($file->getClientOriginalExtension());
+        $extension         = strtolower($file->getClientOriginalExtension());
 
-        if (!in_array($extension, $allowedExtensions, true)) {
+        if (! in_array($extension, $allowedExtensions, true)) {
             return $this->uploadErrorResponse([
                 'attachment' => ['File harus berekstensi pdf, jpg, jpeg, atau png.'],
             ]);
         }
 
-        $path = $file->store('transactions', 'public');
+        $path       = $file->store('transactions', 'public');
         $publicPath = 'storage/' . $path;
 
         $stockOut->update(['attachment_path' => $publicPath]);
 
         return $this->successResponse('Bukti transaksi berhasil diupload', [
-            'id' => $stockOut->id,
+            'id'              => $stockOut->id,
             'attachment_path' => $stockOut->attachment_path,
         ]);
     }
 
-    private function writeActivityLog(Request $request, string $action, StockOut $stockOut, ?array $oldValues, ?array $newValues): void
-    {
-        if (!Schema::hasTable('activity_logs')) {
-            return;
-        }
-
-        ActivityLog::create([
-            'user_id' => $request->user()->id,
-            'action' => $action,
-            'model_type' => StockOut::class,
-            'model_id' => $stockOut->id,
-            'old_values' => $oldValues,
-            'new_values' => $newValues,
-            'ip_address' => $request->ip(),
-            'description' => "{$action}: {$stockOut->reference_number}",
-        ]);
-    }
+    // ─────────────────────────────────────────────────────────────
+    // Private helpers
+    // ─────────────────────────────────────────────────────────────
 
     private function successResponse(string $message, $data = null, int $status = Response::HTTP_OK)
     {
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data' => $data,
+            'data'    => $data,
         ], $status);
+    }
+
+    private function writeActivityLog(Request $request, string $action, StockOut $stockOut, ?array $oldValues, ?array $newValues): void
+    {
+        if (! Schema::hasTable('activity_logs')) {
+            return;
+        }
+
+        ActivityLog::create([
+            'user_id'     => $request->user()->id,
+            'action'      => $action,
+            'model_type'  => StockOut::class,
+            'model_id'    => $stockOut->id,
+            'old_values'  => $oldValues,
+            'new_values'  => $newValues,
+            'ip_address'  => $request->ip(),
+            'description' => "{$action}: {$stockOut->reference_number}",
+        ]);
     }
 
     private function validationErrorResponse($validator)
@@ -216,7 +268,7 @@ class StockOutController extends Controller
         return response()->json([
             'success' => false,
             'message' => 'Validasi gagal',
-            'errors' => $validator->errors(),
+            'errors'  => $validator->errors(),
         ], Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
@@ -225,7 +277,7 @@ class StockOutController extends Controller
         return response()->json([
             'success' => false,
             'message' => 'Upload gagal',
-            'errors' => $errors,
+            'errors'  => $errors,
         ], Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
@@ -234,7 +286,7 @@ class StockOutController extends Controller
         return response()->json([
             'success' => false,
             'message' => $message,
-            'errors' => $errors,
+            'errors'  => $errors,
         ], Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 

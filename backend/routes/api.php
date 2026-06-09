@@ -47,8 +47,6 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/stock-ins/{id}/upload', [StockInController::class, 'uploadProof']);
         Route::post('/stock-outs/{id}/upload', [StockOutController::class, 'uploadProof']);
 
-        Route::get('/admin/reports/export', [ReportController::class, 'export']);
-
         Route::middleware('role:admin')->group(function () {
             Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
             Route::get('/admin/users', [AdminController::class, 'users']);
@@ -57,6 +55,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::put('/admin/users/{id}', [AdminController::class, 'updateUser']);
             Route::delete('/admin/users/{id}', [AdminController::class, 'destroyUser']);
             Route::get('/admin/reports', [ReportController::class, 'index']);
+            Route::get('/admin/reports/export', [ReportController::class, 'export']);
             Route::get('/activity-logs', [ActivityLogController::class, 'index']);
             Route::get('/activity-logs/{id}', [ActivityLogController::class, 'show']);
         });

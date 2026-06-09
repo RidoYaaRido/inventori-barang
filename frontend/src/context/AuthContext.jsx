@@ -51,7 +51,7 @@ export function AuthProvider({ children }) {
       const { token: authToken, user: authUser } = getAuthPayload(response)
 
       if (!authToken || !authUser) {
-        throw new Error('Response login tidak valid dari backend.')
+        throw new Error('Response login tidak valid')
       }
 
       localStorage.setItem('token', authToken)
@@ -74,7 +74,7 @@ export function AuthProvider({ children }) {
       const { token: authToken, user: authUser } = getAuthPayload(response)
 
       if (!authToken || !authUser) {
-        throw new Error('Response register tidak valid dari backend.')
+        throw new Error('Response register tidak valid')
       }
 
       localStorage.setItem('token', authToken)

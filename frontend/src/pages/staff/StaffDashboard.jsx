@@ -60,7 +60,7 @@ function StaffDashboard() {
     <section className="dashboard-page">
       <div className="dashboard-heading">
         <h2>Dashboard Staff</h2>
-        <p>Ringkasan inventaris berdasarkan data backend.</p>
+        <p>Ringkasan inventaris</p>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}

@@ -69,7 +69,7 @@ export default function BarangMasuk() {
   return (
     <section className="container-fluid py-4">
       <h2>Barang Masuk</h2>
-      <p className="text-muted">Input transaksi barang masuk dari data backend.</p>
+      <p className="text-muted">Input transaksi barang masuk</p>
 
       {error && <div className="alert alert-danger">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
