@@ -1,19 +1,7 @@
-import { Outlet } from 'react-router-dom'
-import Navbar from '../components/Navbar'
-import Sidebar from '../components/Sidebar'
+import DashboardLayout from './DashboardLayout'
 
 function StaffLayout() {
-  return (
-    <div className="app-shell">
-      <Sidebar role="staff" />
-      <div className="app-main">
-        <Navbar />
-        <main className="content-area">
-          <Outlet />
-        </main>
-      </div>
-    </div>
-  )
+  return <DashboardLayout role="staff" />
 }
 
 export default StaffLayout

@@ -4,20 +4,19 @@ import { useAuth } from '../context/useAuth'
 
 const staffMenus = [
   { icon: 'grid', label: 'Dashboard', path: '/staff/dashboard' },
-  { icon: 'box', label: 'Data Barang', path: '/staff/barang' },
-  { icon: 'inbox', label: 'Barang Masuk', path: '/staff/barang-masuk' },
-  { icon: 'outbox', label: 'Barang Keluar', path: '/staff/barang-keluar' },
-  { icon: 'user', label: 'Profil', path: '/staff/profile' },
+  { icon: 'box', label: 'Daftar Barang', path: '/staff/items' },
+  { icon: 'inbox', label: 'Barang Masuk', path: '/staff/stock-in' },
+  { icon: 'outbox', label: 'Barang Keluar', path: '/staff/stock-out' },
+  { icon: 'history', label: 'Riwayat Transaksi', path: '/staff/transactions' },
 ]
 
 const adminMenus = [
   { icon: 'grid', label: 'Dashboard', path: '/admin/dashboard' },
-  { icon: 'box', label: 'Kelola Barang', path: '/admin/kelola-barang' },
-  { icon: 'category', label: 'Kelola Kategori', path: '/admin/kelola-kategori' },
-  { icon: 'staff', label: 'Kelola Staff', path: '/admin/kelola-staff' },
-  { icon: 'check', label: 'Validasi Transaksi', path: '/admin/validasi-transaksi' },
-  { icon: 'report', label: 'Laporan', path: '/admin/laporan' },
-  { icon: 'history', label: 'Log Aktivitas', path: '/admin/log-aktivitas' },
+  { icon: 'box', label: 'Kelola Barang', path: '/admin/items' },
+  { icon: 'category', label: 'Kelola Kategori', path: '/admin/categories' },
+  { icon: 'staff', label: 'Kelola Staff', path: '/admin/users' },
+  { icon: 'report', label: 'Laporan', path: '/admin/reports' },
+  { icon: 'history', label: 'Activity Log', path: '/admin/logs' },
 ]
 
 const iconPaths = {
@@ -43,7 +42,7 @@ function SidebarIcon({ name }) {
   )
 }
 
-function Sidebar({ role }) {
+function Sidebar({ isCollapsed, isOpen, role, onClose, onToggleCollapse }) {
   const navigate = useNavigate()
   const { logout } = useAuth()
   const menus = role === 'admin' ? adminMenus : staffMenus
@@ -64,14 +63,25 @@ function Sidebar({ role }) {
 
   return (
     <>
-      <aside className="app-sidebar">
+      <aside className={`app-sidebar ${isOpen ? 'is-open' : ''} ${isCollapsed ? 'is-collapsed' : ''}`}>
         <div className="sidebar-brand">
           <div className="sidebar-logo">{role === 'admin' ? 'IP' : 'IP'}</div>
-          <div>
+          <div className="sidebar-brand-copy">
             <h1>{role === 'admin' ? 'InventarisPro' : 'InventarisPro'}</h1>
             <small>{role === 'admin' ? 'Admin Portal' : 'Staff Portal'}</small>
           </div>
+          <button
+            aria-label="Tutup menu"
+            className="sidebar-close"
+            type="button"
+            onClick={onClose}
+          >
+            <svg aria-hidden="true" className="sidebar-icon" viewBox="0 0 24 24">
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
         </div>
+       
         <nav className="sidebar-nav">
           {menus.map((menu) => (
             <NavLink
@@ -80,22 +90,23 @@ function Sidebar({ role }) {
               }
               key={menu.path}
               to={menu.path}
+              onClick={onClose}
             >
               <SidebarIcon name={menu.icon} />
-              {menu.label}
+              <span>{menu.label}</span>
             </NavLink>
           ))}
         </nav>
         <div className="sidebar-footer">
           {role === 'admin' && (
-            <NavLink className="nav-link sidebar-link sidebar-support" to="/admin/bantuan">
+            <NavLink className="nav-link sidebar-link sidebar-support" to="/admin/bantuan" onClick={onClose}>
               <SidebarIcon name="help" />
-              Bantuan
+              <span>Bantuan</span>
             </NavLink>
           )}
           <button className="sidebar-logout" type="button" onClick={() => setIsLogoutOpen(true)}>
             <SidebarIcon name="logout" />
-            Keluar
+            <span>Keluar</span>
           </button>
         </div>
       </aside>

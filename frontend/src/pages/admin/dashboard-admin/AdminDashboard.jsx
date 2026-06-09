@@ -1,114 +1,101 @@
-const stats = [
-  { icon: 'box', label: 'Total Barang', meta: '+12%', value: '2.540', variant: 'teal' },
-  { icon: 'category', label: 'Total Kategori', value: '12', variant: 'orange' },
-  { icon: 'staff', label: 'Total Staff', value: '8', variant: 'green' },
-  { icon: 'transaction', label: 'Total Transaksi', meta: '-3%', value: '145', variant: 'red' },
-]
+import { useEffect, useState } from 'react'
+import { adminApi } from '../../../api/adminApi'
+import { asArray, formatDate, getApiData, getApiMessage, getItemName } from '../../../api/response'
 
-const months = [
-  { label: 'Jan', value: 34 },
-  { label: 'Feb', value: 52 },
-  { label: 'Mar', value: 26 },
-  { label: 'Apr', value: 70 },
-  { label: 'Mei', value: 42 },
-  { label: 'Jun', value: 62 },
-  { label: 'Jul', value: 84, active: true },
-  { label: 'Ags', value: 58 },
-]
-
-function DashboardIcon({ name }) {
-  const paths = {
-    box: 'M5 7h14v12H5V7Zm3-3h8l3 3H5l3-3Zm3 8h2',
-    category: 'M7 4h10l4 8-9 8-9-8 4-8Zm5 4v5',
-    staff: 'M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm8 0a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM4 19a4 4 0 0 1 8 0m2 0a3.5 3.5 0 0 1 6 0',
-    transaction: 'M5 5h14v14H5V5Zm4 5h6m-6 4h4m3 1 2 2 3-4',
-  }
-
+function StatCard({ label, value }) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d={paths[name]} />
-    </svg>
+    <article className="stat-card">
+      <p>{label}</p>
+      <strong>{value ?? 0}</strong>
+    </article>
   )
 }
 
 function AdminDashboard() {
+  const [dashboard, setDashboard] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    async function loadDashboard() {
+      setLoading(true)
+      setError('')
+
+      try {
+        const response = await adminApi.dashboard()
+        setDashboard(getApiData(response, {}))
+      } catch (err) {
+        setError(getApiMessage(err, 'Gagal memuat dashboard admin.'))
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDashboard()
+  }, [])
+
+  const lowStockItems = asArray(dashboard?.low_stock_items)
+  const recentStockIn = asArray(dashboard?.recent_stock_in)
+  const recentStockOut = asArray(dashboard?.recent_stock_out)
+
   return (
     <section className="dashboard-page">
       <div className="dashboard-heading">
-        <h2>Selamat Datang, Administrator</h2>
-        <p>Berikut adalah ringkasan sistem inventaris Anda hari ini.</p>
+        <h2>Dashboard Admin</h2>
+        <p>Ringkasan sistem inventaris dari backend.</p>
       </div>
 
-      <div className="stats-grid admin-stats">
-        {stats.map((stat) => (
-          <article className={`stat-card stat-card-${stat.variant}`} key={stat.label}>
-            <div className="stat-topline">
-              <span className="stat-icon">
-                <DashboardIcon name={stat.icon} />
-              </span>
-              {stat.meta && <span className="stat-meta">{stat.meta}</span>}
-            </div>
-            <p>{stat.label}</p>
-            <strong>{stat.value}</strong>
-          </article>
-        ))}
-      </div>
+      {error && <div className="alert alert-danger">{error}</div>}
+      {loading ? (
+        <div className="spinner-border" role="status" aria-label="Memuat data" />
+      ) : (
+        <>
+          <div className="stats-grid admin-stats">
+            <StatCard label="Total Barang" value={dashboard?.total_items} />
+            <StatCard label="Total Kategori" value={dashboard?.total_categories} />
+            <StatCard label="Total Staff" value={dashboard?.total_staff} />
+            <StatCard label="Total Stock In" value={dashboard?.total_stock_in} />
+            <StatCard label="Total Stock Out" value={dashboard?.total_stock_out} />
+            <StatCard label="Low Stock" value={lowStockItems.length} />
+          </div>
 
-      <div className="admin-dashboard-grid">
-        <article className="dashboard-card category-card">
-          <div className="card-heading">
-            <h3>Distribusi Kategori</h3>
-            <button aria-label="Menu distribusi kategori" type="button">
-              ...
-            </button>
+          <div className="dashboard-list-grid admin-list-grid">
+            <DataList title="Low Stock Items" rows={lowStockItems} />
+            <DataList title="Recent Stock In" rows={recentStockIn} />
+            <DataList title="Recent Stock Out" rows={recentStockOut} />
           </div>
-          <div className="donut-wrap">
-            <div className="donut-chart">
-              <span>65%</span>
-              <small>Elektronik</small>
-            </div>
-          </div>
-          <div className="legend-list">
-            <div>
-              <span className="legend-dot teal" />
-              Elektronik
-              <strong>65%</strong>
-            </div>
-            <div>
-              <span className="legend-dot green" />
-              Furnitur
-              <strong>25%</strong>
-            </div>
-            <div>
-              <span className="legend-dot soft" />
-              Lainnya
-              <strong>10%</strong>
-            </div>
-          </div>
-        </article>
-
-        <article className="dashboard-card trend-card">
-          <div className="card-heading">
-            <div>
-              <h3>Trend Transaksi Bulanan</h3>
-              <p>Pergerakan transaksi keluar/masuk tahun ini</p>
-            </div>
-            <button className="period-button" type="button">Tahun Ini</button>
-          </div>
-          <div className="bar-chart admin-chart">
-            {months.map((month) => (
-              <div className="bar-item" key={month.label}>
-                <span
-                  className={month.active ? 'active' : ''}
-                  style={{ '--bar-height': `${month.value}%` }}
-                />
-                <small>{month.label}</small>
-              </div>
-            ))}
-          </div>
-        </article>
-      </div>
+        </>
+      )}
     </section>
+  )
+}
+
+function DataList({ title, rows }) {
+  return (
+    <article className="dashboard-card">
+      <div className="card-heading">
+        <div>
+          <h3>{title}</h3>
+        </div>
+      </div>
+        {rows.length === 0 ? (
+          <p className="empty-text">Data belum tersedia</p>
+        ) : (
+          <div className="table-responsive">
+            <table className="table dashboard-table align-middle">
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.id}>
+                    <td>{getItemName(row)}</td>
+                    <td>{row.quantity ?? row.stock_quantity ?? row.stock ?? '-'}</td>
+                    <td className="text-end">{formatDate(row.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+    </article>
   )
 }
 

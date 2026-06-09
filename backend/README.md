@@ -123,6 +123,116 @@ curl -X PUT http://localhost:8000/api/v1/stock-outs/1 \
   -d '{"quantity":2,"reference_number":"SO-UPDATED-001","notes":"Update jumlah barang keluar"}'
 ```
 
+## Backend Admin Module
+
+Route admin baru:
+
+```php
+Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
+Route::get('/admin/users', [AdminController::class, 'users']);
+Route::post('/admin/users', [AdminController::class, 'storeUser']);
+Route::get('/admin/users/{id}', [AdminController::class, 'showUser']);
+Route::put('/admin/users/{id}', [AdminController::class, 'updateUser']);
+Route::delete('/admin/users/{id}', [AdminController::class, 'destroyUser']);
+Route::get('/admin/reports', [ReportController::class, 'index']);
+Route::get('/admin/reports/export', [ReportController::class, 'export']);
+Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+Route::get('/activity-logs/{id}', [ActivityLogController::class, 'show']);
+```
+
+Controller method yang ditambahkan:
+
+- `AdminController::dashboard`
+- `AdminController::users`
+- `AdminController::storeUser`
+- `AdminController::showUser`
+- `AdminController::updateUser`
+- `AdminController::destroyUser`
+- `ReportController::index`
+- `ReportController::export`
+- `ActivityLogController::index`
+- `ActivityLogController::show`
+- `StockInController::uploadProof`
+- `StockOutController::uploadProof`
+
+Migration tambahan:
+
+- `2026_06_08_000001_add_is_active_to_users_table.php`
+
+Contoh response dashboard:
+
+```json
+{
+  "success": true,
+  "message": "Dashboard admin berhasil diambil",
+  "data": {
+    "total_items": 10,
+    "total_categories": 5,
+    "total_staff": 3,
+    "total_stock_ins": 20,
+    "total_stock_outs": 12,
+    "low_stock_items": 2,
+    "recent_stock_ins": [],
+    "recent_stock_outs": []
+  }
+}
+```
+
+Contoh manual testing:
+
+```bash
+ADMIN_TOKEN="paste_token_admin"
+STAFF_TOKEN="paste_token_staff"
+
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@inventory.local","password":"password123"}'
+
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"staff@inventory.local","password":"password123"}'
+
+curl http://localhost:8000/api/v1/admin/dashboard \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+curl http://localhost:8000/api/v1/admin/dashboard \
+  -H "Authorization: Bearer $STAFF_TOKEN"
+
+curl http://localhost:8000/api/v1/admin/reports/export \
+  -H "Authorization: Bearer $STAFF_TOKEN" \
+  -o inventory-report-staff.csv
+
+curl http://localhost:8000/api/v1/stock-ins/1 \
+  -H "Authorization: Bearer $STAFF_TOKEN"
+
+curl http://localhost:8000/api/v1/admin/reports/export \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -o inventory-report-admin.csv
+
+curl http://localhost:8000/api/v1/activity-logs \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+Checklist implementasi:
+
+- Dashboard admin tersedia di `GET /api/v1/admin/dashboard`.
+- CRUD user admin tersedia dan delete melakukan `is_active = false`.
+- Report summary dan export CSV tersedia.
+- Activity log mendukung filter `user_id`, `action`, `model_type`, `start_date`, dan `end_date`.
+- Upload bukti transaksi tersimpan ke `storage/app/public/transactions`.
+- Endpoint admin selain export memakai `auth:sanctum` dan `role:admin`.
+- Endpoint export tetap memakai `auth:sanctum`.
+
+## Security Lab Intended Vulnerabilities
+
+Aplikasi ini sengaja rentan dan hanya boleh dijalankan pada lingkungan lab tertutup. Jangan deploy ke production publik tanpa memperbaiki vulnerability.
+
+- IDOR pada detail stock in/out: `GET /api/v1/stock-ins/{id}` dan `GET /api/v1/stock-outs/{id}` dapat membaca transaksi berdasarkan ID setelah login.
+- Broken Access Control pada export laporan: `GET /api/v1/admin/reports/export` hanya membutuhkan login.
+- Weak File Upload Validation pada upload bukti: backend memvalidasi ekstensi `pdf`, `jpg`, `jpeg`, atau `png`.
+- Information Disclosure melalui `APP_DEBUG=true` di environment lab. Jangan gunakan konfigurasi ini untuk production sungguhan.
+- Business Logic Flaw pada update transaksi stok: perubahan status transaksi tertentu dapat membuat stok tidak sinkron pada skenario lab.
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.

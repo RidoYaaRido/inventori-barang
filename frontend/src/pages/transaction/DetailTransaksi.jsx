@@ -1,37 +1,74 @@
-import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { stockInApi } from '../../api/stockInApi'
+import { stockOutApi } from '../../api/stockOutApi'
+import { formatDate, getApiData, getApiMessage, getItemName, getUserName } from '../../api/response'
 
-const mockDetail = id => ({
-  id,
-  type: id && id.endsWith('1') ? 'masuk' : 'keluar',
-  item: 'Contoh Barang',
-  qty: 10,
-  date: '2026-06-06',
-  supplier: 'PT. Contoh',
-  divisi: 'IT',
-  status: 'Selesai',
-  proofUrl: null,
-});
+function Row({ label, value }) {
+  return (
+    <tr>
+      <th style={{ width: 220 }}>{label}</th>
+      <td>{value || '-'}</td>
+    </tr>
+  )
+}
 
 export default function DetailTransaksi() {
-  const { id } = useParams();
-  const data = mockDetail(id || 'T-000');
+  const { type, id } = useParams()
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    async function loadDetail() {
+      setLoading(true)
+      setError('')
+
+      try {
+        const api = type === 'stock-out' ? stockOutApi : stockInApi
+        const response = await api.detail(id)
+        setData(getApiData(response, null))
+      } catch (err) {
+        setError(getApiMessage(err, 'Gagal memuat detail transaksi.'))
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDetail()
+  }, [id, type])
 
   return (
-    <div>
-      <h2>Detail Transaksi {data.id}</h2>
-      <div style={{ display: 'grid', gap: 6, maxWidth: 640 }}>
-        <div><strong>Tipe:</strong> {data.type}</div>
-        <div><strong>Nama Barang:</strong> {data.item}</div>
-        <div><strong>Jumlah:</strong> {data.qty}</div>
-        <div><strong>Tanggal:</strong> {data.date}</div>
-        {data.supplier && <div><strong>Supplier:</strong> {data.supplier}</div>}
-        {data.divisi && <div><strong>Divisi:</strong> {data.divisi}</div>}
-        <div><strong>Status:</strong> {data.status}</div>
-        <div style={{ marginTop: 8 }}>
-          <Link to={`/transactions/upload/${data.id}`}>Upload/Perbarui Bukti</Link>
+    <section className="container-fluid py-4">
+      <Link className="btn btn-sm btn-outline-secondary mb-3" to="/staff/transactions">Kembali</Link>
+      <h2>Detail Transaksi</h2>
+
+      {error && <div className="alert alert-danger">{error}</div>}
+      {loading ? (
+        <div className="spinner-border" role="status" aria-label="Memuat data" />
+      ) : !data ? (
+        <p className="text-muted">Data belum tersedia</p>
+      ) : (
+        <div className="card shadow-sm">
+          <div className="card-body">
+            <div className="table-responsive">
+              <table className="table">
+                <tbody>
+                  <Row label="Tipe Transaksi" value={type === 'stock-out' ? 'Barang Keluar' : 'Barang Masuk'} />
+                  <Row label="Nama Barang" value={getItemName(data)} />
+                  <Row label="Quantity" value={data.quantity} />
+                  <Row label="User" value={getUserName(data)} />
+                  <Row label="Reference Number" value={data.reference_number} />
+                  <Row label="Notes" value={data.notes} />
+                  <Row label="Status" value={data.status} />
+                  <Row label="Tanggal" value={formatDate(data.created_at || data.received_at || data.released_at)} />
+                  <Row label="Bukti Upload" value={data.attachment_url || data.attachment_path ? <a href={data.attachment_url || data.attachment_path} target="_blank" rel="noreferrer">Lihat bukti</a> : '-'} />
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  );
+      )}
+    </section>
+  )
 }

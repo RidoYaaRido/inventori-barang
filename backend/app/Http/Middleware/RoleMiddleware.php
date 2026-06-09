@@ -5,7 +5,6 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Support\Facades\Auth;
 
 class RoleMiddleware
 {
@@ -16,9 +15,20 @@ class RoleMiddleware
      */
     public function handle(Request $request, Closure $next, string $role)
     {
-        if (!Auth::check() || Auth::user()->role !== $role){
-            abort(403, 'Akses ditolak.');
-        } 
+        if (!$request->user()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        if ($request->user()->role !== $role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
         return $next($request);
     }
 }

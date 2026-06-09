@@ -1,107 +1,142 @@
-import { useState } from "react";
-import "./utils/style.css";
-import { 
-  Plus, 
-  Trash2, 
-  Cpu, 
-  Sofa, 
-  PenTool, 
-  Wifi, 
-  FolderOpen 
-} from "lucide-react";
-import { INITIAL_CATEGORIES, ICON_MAP } from "./utils/data";
-import ModalTambahKategori from "./components/ModalForm";
+import { useEffect, useState } from 'react'
+import { categoryApi } from '../../../api/categoryApi'
+import { asArray, getApiData, getApiMessage } from '../../../api/response'
+
+const initialForm = { name: '', description: '', is_active: true }
 
 export default function KelolaKategori() {
-  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [categories, setCategories] = useState([])
+  const [form, setForm] = useState(initialForm)
+  const [editingId, setEditingId] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
-  const handleDelete = (id) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus kategori ini?")) {
-      setCategories(prev => prev.filter(cat => cat.id !== id));
+  async function loadCategories() {
+    setLoading(true)
+    setError('')
+
+    try {
+      const response = await categoryApi.list()
+      setCategories(asArray(getApiData(response)))
+    } catch (err) {
+      setError(getApiMessage(err, 'Gagal memuat kategori.'))
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
-  const handleSaveCategory = (newCat) => {
-    const freshId = `CAT-${categories.length + 1}`;
-    const preparedData = {
-      id: freshId,
-      name: newCat.name,
-      description: newCat.description,
-      skuCount: 0, // Kategori baru otomatis memiliki 0 SKU terdaftar
-      iconStyle: newCat.iconStyle
-    };
-    setCategories(prev => [...prev, preparedData]);
-  };
+  useEffect(() => {
+    loadCategories()
+  }, [])
+
+  function updateField(event) {
+    const { name, value, type, checked } = event.target
+    setForm((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value }))
+  }
+
+  function startEdit(category) {
+    setEditingId(category.id)
+    setForm({
+      name: category.name || '',
+      description: category.description || '',
+      is_active: category.is_active !== false && category.is_active !== 0,
+    })
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    setSaving(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      if (editingId) {
+        await categoryApi.update(editingId, form)
+        setSuccess('Kategori berhasil diperbarui.')
+      } else {
+        await categoryApi.create(form)
+        setSuccess('Kategori berhasil ditambahkan.')
+      }
+      setForm(initialForm)
+      setEditingId(null)
+      await loadCategories()
+    } catch (err) {
+      setError(getApiMessage(err, 'Gagal menyimpan kategori.'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete(id) {
+    if (!window.confirm('Hapus/nonaktifkan kategori ini?')) return
+
+    try {
+      await categoryApi.remove(id)
+      setSuccess('Kategori berhasil dihapus/nonaktifkan.')
+      await loadCategories()
+    } catch (err) {
+      setError(getApiMessage(err, 'Gagal menghapus kategori.'))
+    }
+  }
 
   return (
-    <div className="kategori-page-container">
-      
-      {/* ── Header ── */}
-      <div className="kategori-header">
-        <div>
-          <h1 className="kategori-title font-sora">Kelola Kategori Barang</h1>
-          <p className="kategori-subtitle">
-            Kelompokkan SKU barang dalam kategori logistik yang bermakna.
-          </p>
-        </div>
-        <button className="btn-kategori-add" onClick={() => setIsModalOpen(true)}>
-          <Plus size={16} /> Buat Kategori Baru
-        </button>
-      </div>
+    <section className="container-fluid py-4">
+      <h2>Kelola Kategori</h2>
+      <p className="text-muted">Tambah, edit, dan hapus kategori barang.</p>
 
-      {/* ── Grid Items Kategori ── */}
-      <div className="kategori-grid">
-        {categories.length === 0 ? (
-          <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "60px 0", color: "#94a3b8" }}>
-            <FolderOpen size={40} style={{ display: "block", margin: "0 auto 12px", color: "#cbd5e1" }} />
-            Belum ada kategori barang terdaftar.
-          </div>
-        ) : (
-          categories.map((cat) => (
-            <div key={cat.id} className="kategori-card">
-              
-              {/* Baris Atas: Ikon & Aksi Hapus */}
-              <div className="card-top-bar">
-                <div className={`kategori-icon-wrapper ${cat.iconStyle}`}>
-                  {ICON_MAP[cat.iconStyle] || <FolderOpen size={20} />}
-                </div>
-                <button 
-                  className="btn-delete-card"
-                  onClick={() => handleDelete(cat.id)}
-                  title="Hapus Kategori"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
+      {error && <div className="alert alert-danger">{error}</div>}
+      {success && <div className="alert alert-success">{success}</div>}
 
-              {/* Baris Tengah: Detail Kategori */}
-              <div className="card-body">
-                <h3 className="card-title font-sora">{cat.name}</h3>
-                <p className="card-desc">{cat.description}</p>
-              </div>
-
-              {/* Baris Bawah: Footer Link & Jumlah SKU */}
-              <div className="card-footer-bar">
-                <span className="footer-link-text">Tautan Barang</span>
-                <span className="sku-badge font-mono">
-                  {cat.skuCount} SKUs Terdaftar
-                </span>
-              </div>
-
+      <div className="card shadow-sm mb-4">
+        <div className="card-body">
+          <h5>{editingId ? 'Edit Kategori' : 'Tambah Kategori'}</h5>
+          <form className="row g-3" onSubmit={handleSubmit}>
+            <div className="col-md-4">
+              <label className="form-label">Nama</label>
+              <input className="form-control" name="name" value={form.name} onChange={updateField} required />
             </div>
-          ))
-        )}
+            <div className="col-md-8">
+              <label className="form-label">Deskripsi</label>
+              <input className="form-control" name="description" value={form.description} onChange={updateField} />
+            </div>
+            <div className="col-12 form-check ms-2">
+              <input className="form-check-input" id="category-active" name="is_active" type="checkbox" checked={form.is_active} onChange={updateField} />
+              <label className="form-check-label" htmlFor="category-active">Aktif</label>
+            </div>
+            <div className="col-12 d-flex gap-2">
+              <button className="btn btn-primary" disabled={saving} type="submit">{saving ? 'Menyimpan...' : 'Simpan'}</button>
+              {editingId && <button className="btn btn-outline-secondary" type="button" onClick={() => { setEditingId(null); setForm(initialForm) }}>Batal</button>}
+            </div>
+          </form>
+        </div>
       </div>
 
-      {/* ── Render Modal Form secara Kondisional ── */}
-      {isModalOpen && (
-        <ModalTambahKategori 
-          onClose={() => setIsModalOpen(false)} 
-          onSave={handleSaveCategory}
-        />
-      )}
-
-    </div>
-  );
+      <div className="card shadow-sm">
+        <div className="card-body">
+          {loading ? <div className="spinner-border" role="status" aria-label="Memuat data" /> : categories.length === 0 ? <p className="text-muted mb-0">Data belum tersedia</p> : (
+            <div className="table-responsive">
+              <table className="table align-middle">
+                <thead><tr><th>Nama</th><th>Deskripsi</th><th>Status</th><th>Aksi</th></tr></thead>
+                <tbody>
+                  {categories.map((category) => (
+                    <tr key={category.id}>
+                      <td>{category.name}</td>
+                      <td>{category.description || '-'}</td>
+                      <td>{category.is_active === false || category.is_active === 0 ? 'Tidak Aktif' : 'Aktif'}</td>
+                      <td className="d-flex gap-2">
+                        <button className="btn btn-sm btn-outline-primary" type="button" onClick={() => startEdit(category)}>Edit</button>
+                        <button className="btn btn-sm btn-outline-danger" type="button" onClick={() => handleDelete(category.id)}>Hapus</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  )
 }

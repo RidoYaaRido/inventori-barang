@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Barang;
-use App\Models\BarangKeluar;
+use App\Models\ActivityLog;
+use App\Models\Item;
+use App\Models\StockOut;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -48,21 +50,12 @@ class StockOutController extends Controller
             );
         }
 
-        DB::transaction(function () use ($request, $barang) {
-            BarangKeluar::create([
-                'barang_id'       => $request->barang_id,
-                'user_id'         => Auth::id(),
-                'jumlah'          => $request->jumlah,
-                'tanggal'         => $request->tanggal,
-                'keterangan'      => $request->keterangan,
-                'divisi'          => $request->divisi,
-                'bukti_transaksi' => $request->bukti_transaksi,
-                'status'          => 'pending',
-            ]);
+        $validated['user_id'] = $request->user()->id;
+        $validated['status'] = 'completed';
 
         $stockOut = StockOut::create($validated);
-
         $item->decrement('stock_quantity', $validated['quantity']);
+        $this->writeActivityLog($request, 'create stock out', $stockOut, null, $stockOut->toArray());
 
         return $this->successResponse(
             'Barang keluar berhasil dicatat',
@@ -128,7 +121,9 @@ class StockOutController extends Controller
             }
         }
 
+        $oldValues = $stockOut->toArray();
         $stockOut->update($validated);
+        $this->writeActivityLog($request, 'update stock out', $stockOut, $oldValues, $stockOut->fresh()->toArray());
 
         return $this->successResponse(
             'Barang keluar berhasil diperbarui',
@@ -145,7 +140,9 @@ class StockOutController extends Controller
         }
 
         $stockOut->item->increment('stock_quantity', $stockOut->quantity);
+        $oldValues = $stockOut->toArray();
         $stockOut->delete();
+        $this->writeActivityLog(request(), 'delete stock out', $stockOut, $oldValues, null);
 
         return $this->successResponse('Barang keluar berhasil dihapus');
     }
@@ -184,6 +181,24 @@ class StockOutController extends Controller
         return $this->successResponse('Bukti transaksi berhasil diupload', [
             'id' => $stockOut->id,
             'attachment_path' => $stockOut->attachment_path,
+        ]);
+    }
+
+    private function writeActivityLog(Request $request, string $action, StockOut $stockOut, ?array $oldValues, ?array $newValues): void
+    {
+        if (!Schema::hasTable('activity_logs')) {
+            return;
+        }
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'action' => $action,
+            'model_type' => StockOut::class,
+            'model_id' => $stockOut->id,
+            'old_values' => $oldValues,
+            'new_values' => $newValues,
+            'ip_address' => $request->ip(),
+            'description' => "{$action}: {$stockOut->reference_number}",
         ]);
     }
 

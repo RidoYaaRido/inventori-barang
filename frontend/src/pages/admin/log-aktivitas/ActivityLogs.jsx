@@ -1,104 +1,82 @@
-import { useState } from "react";
-import "./utils/style.css";
-import { User, PlusCircle, RefreshCw, ShieldAlert, Trash2, ShieldCheck } from "lucide-react";
-import { INITIAL_LOGS, FILTER_CATEGORIES } from "./utils/data";
-
+import { useEffect, useMemo, useState } from 'react'
+import { adminApi } from '../../../api/adminApi'
+import { asArray, formatDate, getApiData, getApiMessage, getUserName } from '../../../api/response'
 
 export default function LogAktivitas() {
-  const [logs] = useState(INITIAL_LOGS);
-  const [activeFilter, setActiveFilter] = useState("Semua Log");
+  const [logs, setLogs] = useState([])
+  const [filter, setFilter] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  // Filter logika data
-  const filteredLogs = logs.filter(log => {
-    if (activeFilter === "Semua Log") return true;
-    return log.category === activeFilter;
-  });
+  useEffect(() => {
+    async function loadLogs() {
+      setLoading(true)
+      setError('')
 
-  // Fungsi pembantu untuk merender ikon dinamis dari Lucide
-  const renderLogIcon = (type) => {
-    switch (type) {
-      case "create":
-        return <PlusCircle size={18} />;
-      case "delete":
-        return <Trash2 size={18} />;
-      case "update":
-        return <RefreshCw size={18} />;
-      case "validate":
-        return <ShieldCheck size={18} />;
-      case "profile":
-      default:
-        return <User size={18} />;
+      try {
+        const response = await adminApi.activityLogs(filter ? { action: filter } : {})
+        setLogs(asArray(getApiData(response)))
+      } catch (err) {
+        setError(getApiMessage(err, 'Gagal memuat activity log.'))
+      } finally {
+        setLoading(false)
+      }
     }
-  };
+
+    loadLogs()
+  }, [filter])
+
+  const actions = useMemo(() => {
+    return [...new Set(logs.map((log) => log.action).filter(Boolean))]
+  }, [logs])
 
   return (
-    <div className="log-page-container">
-      
-      {/* ── Header ── */}
-      <div className="log-header">
-        <h1 className="log-title font-sora">Log Audit & Aktivitas Jaringan</h1>
-        <p className="log-subtitle">
-          Rekam jejak transaksional sistem untuk pemantauan integritas data inventaris secara real-time.
-        </p>
+    <section className="container-fluid py-4">
+      <div className="d-flex flex-wrap justify-content-between gap-3 mb-3">
+        <div>
+          <h2>Activity Log</h2>
+          <p className="text-muted mb-0">Rekam aktivitas pengguna dari backend.</p>
+        </div>
+        <select className="form-select" style={{ maxWidth: 240 }} value={filter} onChange={(event) => setFilter(event.target.value)}>
+          <option value="">Semua Action</option>
+          {actions.map((action) => <option key={action} value={action}>{action}</option>)}
+        </select>
       </div>
 
-      {/* ── Kategori Filter Audit (Sesuai Layout Gambar) ── */}
-      <div className="filter-card">
-        <span className="filter-label">Kategori Filter Audit:</span>
-        <div className="filter-btn-group">
-          {FILTER_CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveFilter(cat)}
-              className={`filter-btn ${activeFilter === cat ? "active" : ""}`}
-            >
-              {cat}
-            </button>
-          ))}
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      <div className="card shadow-sm">
+        <div className="card-body">
+          {loading ? <div className="spinner-border" role="status" aria-label="Memuat data" /> : logs.length === 0 ? <p className="text-muted mb-0">Data belum tersedia</p> : (
+            <div className="table-responsive">
+              <table className="table align-middle">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Model Type</th>
+                    <th>Description</th>
+                    <th>IP Address</th>
+                    <th>Created At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((log) => (
+                    <tr key={log.id}>
+                      <td>{getUserName(log)}</td>
+                      <td>{log.action || '-'}</td>
+                      <td>{log.model_type || log.subject_type || '-'}</td>
+                      <td>{log.description || '-'}</td>
+                      <td>{log.ip_address || '-'}</td>
+                      <td>{formatDate(log.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* ── List Box Log Aktivitas ── */}
-      <div className="logs-card">
-        {filteredLogs.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 0", color: "#64748b" }}>
-            <ShieldAlert size={32} style={{ marginBottom: 8, display: "block", margin: "0 auto" }} />
-            Tidak ada log aktivitas untuk kategori ini.
-          </div>
-        ) : (
-          filteredLogs.map((log) => (
-            <div key={log.id} className="log-item-row">
-              
-              {/* Ikon Box Kiri */}
-              <div className={`log-icon-box ${log.iconType}`}>
-                {renderLogIcon(log.iconType)}
-              </div>
-
-              {/* Konten Log Tengah */}
-              <div className="log-content-area">
-                <div className="log-meta-top">
-                  <span className="log-actor-name font-sora">{log.actor}</span>
-                  <span className="log-category-badge">{log.category}</span>
-                </div>
-                
-                <h4 className="log-action-message">{log.action}</h4>
-                
-                <div className="log-target-wrapper">
-                  <span className="log-target-label">Subjek target:</span>
-                  <span className="log-target-badge font-mono">{log.target}</span>
-                </div>
-              </div>
-
-              {/* Timestamp Kanan */}
-              <div className="log-time-cell font-mono">
-                {log.timestamp}
-              </div>
-
-            </div>
-          ))
-        )}
-      </div>
-
-    </div>
-  );
+    </section>
+  )
 }

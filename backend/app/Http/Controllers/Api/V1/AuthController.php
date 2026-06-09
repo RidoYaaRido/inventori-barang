@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class AuthController extends Controller
 {
@@ -17,15 +20,24 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Email atau password salah.',
             ], 401);
         }
 
-        $user  = Auth::user();
+        if (!$user->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun tidak aktif.',
+            ], 403);
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
+        $this->writeActivityLogSafely($request, $user, 'login', 'User login');
 
         return response()->json([
             'success' => true,
@@ -67,6 +79,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        $this->writeActivityLog($request, $request->user(), 'logout', 'User logout');
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
@@ -100,5 +113,36 @@ class AuthController extends Controller
             'message' => 'Profil berhasil diperbarui.',
             'data'    => $user,
         ]);
+    }
+
+    private function writeActivityLog(Request $request, User $user, string $action, string $description): void
+    {
+        if (!Schema::hasTable('activity_logs')) {
+            return;
+        }
+
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => $action,
+            'model_type' => User::class,
+            'model_id' => $user->id,
+            'old_values' => null,
+            'new_values' => null,
+            'ip_address' => $request->ip(),
+            'description' => $description,
+        ]);
+    }
+
+    private function writeActivityLogSafely(Request $request, User $user, string $action, string $description): void
+    {
+        try {
+            $this->writeActivityLog($request, $user, $action, $description);
+        } catch (\Throwable $exception) {
+            Log::warning('Activity log gagal ditulis saat auth.', [
+                'user_id' => $user->id,
+                'action' => $action,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 }

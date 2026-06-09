@@ -1,6 +1,12 @@
 import { useAuth } from '../context/useAuth'
 
-function Navbar() {
+function Navbar({
+  isDarkMode,
+  isSidebarCollapsed,
+  onOpenSidebar,
+  onToggleSidebar,
+  onToggleTheme,
+}) {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
   const initials = user?.name
@@ -12,6 +18,26 @@ function Navbar() {
 
   return (
     <nav className="app-navbar">
+      <button
+        aria-label="Buka menu"
+        className="top-icon-button mobile-menu-button"
+        type="button"
+        onClick={onOpenSidebar}
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M4 7h16M4 12h16M4 17h16" />
+        </svg>
+      </button>
+      <button
+        aria-label={isSidebarCollapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}
+        className="top-icon-button desktop-sidebar-button"
+        type="button"
+        onClick={onToggleSidebar}
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d={isSidebarCollapsed ? 'M9 6l6 6-6 6' : 'M15 6l-6 6 6 6'} />
+        </svg>
+      </button>
       <div className="top-search">
         <svg aria-hidden="true" viewBox="0 0 24 24">
           <path d="M10.5 18a7.5 7.5 0 1 1 5.3-12.8 7.5 7.5 0 0 1-5.3 12.8Zm5.3-2.2L21 21" />
@@ -23,19 +49,22 @@ function Navbar() {
         />
       </div>
       <div className="top-actions">
-        <button aria-label="Notifikasi" className="top-icon-button" type="button">
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <path d="M18 16v-5a6 6 0 0 0-12 0v5l-2 2h20l-2-2Zm-6 5a2.5 2.5 0 0 0 2.5-2.5h-5A2.5 2.5 0 0 0 12 21Z" />
-          </svg>
-          <span />
+        <button
+          aria-label={isDarkMode ? 'Aktifkan mode terang' : 'Aktifkan mode gelap'}
+          aria-pressed={isDarkMode}
+          className="theme-toggle"
+          type="button"
+          onClick={onToggleTheme}
+        >
+          <span className="theme-toggle-track">
+            <span className="theme-toggle-thumb">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d={isDarkMode ? 'M21 13a8 8 0 1 1-10-10 7 7 0 0 0 10 10Z' : 'M12 4V2m0 20v-2m8-8h2M2 12h2m13.66-5.66 1.41-1.41M4.93 19.07l1.41-1.41m0-11.32L4.93 4.93m14.14 14.14-1.41-1.41M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z'} />
+              </svg>
+            </span>
+          </span>
+          <span className="theme-toggle-label">{isDarkMode ? 'Gelap' : 'Terang'}</span>
         </button>
-        {isAdmin && (
-          <button aria-label="Pengaturan" className="top-icon-button" type="button">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm0-13v3m0 13v3m8-11h3M1 12h3m13.66-6.66 2.12-2.12M4.22 19.78l2.12-2.12m0-11.32L4.22 4.22m15.56 15.56-2.12-2.12" />
-            </svg>
-          </button>
-        )}
         <div className="top-profile">
           <span className="top-avatar">{initials}</span>
           {!isAdmin && (
