@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Barang;
-use App\Models\BarangMasuk;
+use App\Models\ActivityLog;
+use App\Models\Item;
+use App\Models\StockIn;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -43,6 +45,7 @@ class StockInController extends Controller
 
         $item = Item::find($validated['item_id']);
         $item->increment('stock_quantity', $validated['quantity']);
+        $this->writeActivityLog($request, 'create stock in', $stockIn, null, $stockIn->toArray());
 
         return $this->successResponse(
             'Barang masuk berhasil dicatat',
@@ -109,7 +112,9 @@ class StockInController extends Controller
             }
         }
 
+        $oldValues = $stockIn->toArray();
         $stockIn->update($validated);
+        $this->writeActivityLog($request, 'update stock in', $stockIn, $oldValues, $stockIn->fresh()->toArray());
 
         return $this->successResponse(
             'Barang masuk berhasil diperbarui',
@@ -136,7 +141,9 @@ class StockInController extends Controller
         }
 
         $stockIn->item->decrement('stock_quantity', $stockIn->quantity);
+        $oldValues = $stockIn->toArray();
         $stockIn->delete();
+        $this->writeActivityLog(request(), 'delete stock in', $stockIn, $oldValues, null);
 
         return $this->successResponse('Barang masuk berhasil dihapus');
     }
@@ -185,6 +192,24 @@ class StockInController extends Controller
             'message' => $message,
             'data' => $data,
         ], $status);
+    }
+
+    private function writeActivityLog(Request $request, string $action, StockIn $stockIn, ?array $oldValues, ?array $newValues): void
+    {
+        if (!Schema::hasTable('activity_logs')) {
+            return;
+        }
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'action' => $action,
+            'model_type' => StockIn::class,
+            'model_id' => $stockIn->id,
+            'old_values' => $oldValues,
+            'new_values' => $newValues,
+            'ip_address' => $request->ip(),
+            'description' => "{$action}: {$stockIn->reference_number}",
+        ]);
     }
 
     private function validationErrorResponse($validator)

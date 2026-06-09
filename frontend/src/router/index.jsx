@@ -34,11 +34,7 @@ const adminComingSoonRoutes = [
   '/admin/bantuan',
 ]
 
-const staffComingSoonRoutes = [
-  '/staff/barang-masuk',
-  '/staff/barang-keluar',
-  '/staff/profile',
-]
+const staffComingSoonRoutes = ['/staff/profile']
 
 function AppRouter() {
   return (
@@ -58,6 +54,11 @@ function AppRouter() {
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route element={<AdminLayout />}>
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/items" element={<KelolaBarang />} />
+              <Route path="/admin/categories" element={<KelolaKategori />} />
+              <Route path="/admin/users" element={<KelolaStaff />} />
+              <Route path="/admin/reports" element={<Laporan />} />
+              <Route path="/admin/logs" element={<LogAktivitas />} />
               <Route path="/admin/kelola-barang" element={<KelolaBarang />} />
               <Route path="/admin/kelola-kategori" element={<KelolaKategori />} />
               <Route path="/admin/kelola-staff" element={<KelolaStaff />} />
@@ -75,16 +76,24 @@ function AppRouter() {
           <Route element={<ProtectedRoute allowedRoles={['staff']} />}>
             <Route element={<StaffLayout />}>
               <Route path="/staff/dashboard" element={<StaffDashboard />} />
+              <Route path="/staff/items" element={<ItemList />} />
+              <Route path="/staff/items/:id" element={<ItemDetail />} />
+              <Route path="/staff/stock-in" element={<BarangMasuk />} />
+              <Route path="/staff/stock-out" element={<BarangKeluar />} />
+              <Route path="/staff/transactions" element={<History />} />
+              <Route path="/staff/transactions/:type/:id" element={<DetailTransaksi />} />
               <Route path="/staff/barang" element={<ItemList />} />
               <Route path="/staff/data-barang" element={<ItemList />} />
               <Route path="/staff/barang/:id" element={<ItemDetail />} />
+              <Route path="/staff/barang-masuk" element={<BarangMasuk />} />
+              <Route path="/staff/barang-keluar" element={<BarangKeluar />} />
               {/* Transaction routes for staff */}
               <Route path="/transactions" element={<TransactionLayout />}>
                 <Route path="masuk" element={<BarangMasuk />} />
                 <Route path="keluar" element={<BarangKeluar />} />
                 <Route path="history" element={<History />} />
-                <Route path="upload/:id" element={<UploadBukti />} />
-                <Route path="detail/:id" element={<DetailTransaksi />} />
+                <Route path="upload/:type/:id" element={<UploadBukti />} />
+                <Route path="detail/:type/:id" element={<DetailTransaksi />} />
                 <Route path="" element={<Navigate to="/transactions/history" replace />} />
               </Route>
               {staffComingSoonRoutes.map((path) => (

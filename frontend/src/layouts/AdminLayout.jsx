@@ -1,19 +1,7 @@
-import { Outlet } from 'react-router-dom'
-import Navbar from '../components/Navbar'
-import Sidebar from '../components/Sidebar'
+import DashboardLayout from './DashboardLayout'
 
 function AdminLayout() {
-  return (
-    <div className="app-shell">
-      <Sidebar role="admin" />
-      <div className="app-main">
-        <Navbar />
-        <main className="content-area">
-          <Outlet />
-        </main>
-      </div>
-    </div>
-  )
+  return <DashboardLayout role="admin" />
 }
 
 export default AdminLayout

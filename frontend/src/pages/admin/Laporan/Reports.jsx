@@ -1,171 +1,113 @@
-import { useState } from "react";
-import "./utils/style.css";
-import { 
-  Download, 
-  FileText, 
-  Search, 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  Clock, 
-  Inbox 
-} from "lucide-react";
-import { INITIAL_MUTASI } from "./utils/data";
+import { useEffect, useState } from 'react'
+import { adminApi } from '../../../api/adminApi'
+import { asArray, formatDate, getApiData, getApiMessage, getItemName, getUserName } from '../../../api/response'
 
 export default function LaporanMutasi() {
-  const [mutasiData] = useState(INITIAL_MUTASI);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeFlowFilter, setActiveFlowFilter] = useState("Semua Aliran");
+  const [reports, setReports] = useState([])
+  const [filters, setFilters] = useState({ start_date: '', end_date: '' })
+  const [loading, setLoading] = useState(true)
+  const [exporting, setExporting] = useState(false)
+  const [error, setError] = useState('')
 
-  // Filter logika gabungan (Search + Tab Filter Aliran)
-  const filteredData = mutasiData.filter(item => {
-    const matchesSearch = 
-      item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.operator.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.originDestination.toLowerCase().includes(searchQuery.toLowerCase());
-      
-    const matchesFlow = 
-      activeFlowFilter === "Semua Aliran" || 
-      item.type === activeFlowFilter.toUpperCase().replace("BARANG ", "");
+  async function loadReports() {
+    setLoading(true)
+    setError('')
 
-    return matchesSearch && matchesFlow;
-  });
+    try {
+      const response = await adminApi.reports(filters)
+      setReports(asArray(getApiData(response)))
+    } catch (err) {
+      setError(getApiMessage(err, 'Gagal memuat laporan.'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadReports()
+  }, [])
+
+  function updateFilter(event) {
+    setFilters((current) => ({ ...current, [event.target.name]: event.target.value }))
+  }
+
+  async function handleExport() {
+    setExporting(true)
+    setError('')
+
+    try {
+      const response = await adminApi.exportReports(filters)
+      const blob = new Blob([response.data], { type: response.headers['content-type'] || 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'laporan-inventaris.csv'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      setError(getApiMessage(err, 'Gagal export laporan. Pastikan endpoint /admin/reports/export tersedia.'))
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
-    <div className="laporan-container">
-      
-      {/* ── Header Area ── */}
-      <div className="laporan-header">
+    <section className="container-fluid py-4">
+      <div className="d-flex flex-wrap justify-content-between gap-3 mb-3">
         <div>
-          <h1 className="laporan-title font-sora">Laporan Mutasi & Transaksi</h1>
-          <p className="laporan-subtitle">
-            Analisis data mutasi historis, kuantitas volume logistik, dan laporan persediaan.
-          </p>
+          <h2>Laporan</h2>
+          <p className="text-muted mb-0">Laporan mutasi inventaris dari backend.</p>
         </div>
-        <div className="header-actions">
-          <button className="btn-export csv" onClick={() => alert("Export CSV berjalan...")}>
-            <Download size={15} /> Format CSV
-          </button>
-          <button className="btn-export pdf" onClick={() => alert("Unduh PDF berjalan...")}>
-            <FileText size={15} /> Unduh PDF
-          </button>
-        </div>
+        <button className="btn btn-success" disabled={exporting} type="button" onClick={handleExport}>
+          {exporting ? 'Mengunduh...' : 'Export CSV'}
+        </button>
       </div>
 
-      {/* ── Top Stats Cards Grid ── */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon-box"><TrendingUp size={20} /></div>
-          <div className="stat-info">
-            <span className="stat-label">Mutasi Masuk Disetujui</span>
-            <span className="stat-value font-mono">55 unit</span>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon-box"><TrendingDown size={20} /></div>
-          <div className="stat-info">
-            <span className="stat-label">Mutasi Keluar Disetujui</span>
-            <span className="stat-value font-mono">4 unit</span>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon-box"><DollarSign size={20} /></div>
-          <div className="stat-info">
-            <span className="stat-label">Kas Aliran Otoritatif</span>
-            <span className="stat-value font-mono">Rp 239.541.000</span>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon-box"><Clock size={20} /></div>
-          <div className="stat-info">
-            <span className="stat-label">Menunggu Diproses</span>
-            <span className="stat-value font-mono">2 transaksi</span>
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      <div className="card shadow-sm mb-4">
+        <div className="card-body">
+          <div className="row g-3 align-items-end">
+            <div className="col-md-4">
+              <label className="form-label">Start Date</label>
+              <input className="form-control" name="start_date" type="date" value={filters.start_date} onChange={updateFilter} />
+            </div>
+            <div className="col-md-4">
+              <label className="form-label">End Date</label>
+              <input className="form-control" name="end_date" type="date" value={filters.end_date} onChange={updateFilter} />
+            </div>
+            <div className="col-md-4">
+              <button className="btn btn-primary" type="button" onClick={loadReports}>Terapkan Filter</button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── Table Controls Bar ── */}
-      <div className="table-controls-card">
-        <div className="search-wrapper">
-          <Search size={16} className="search-icon" />
-          <input 
-            type="text" 
-            className="search-input" 
-            placeholder="Cari item, operator, divisi..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        <div className="flow-filter-group">
-          {["Semua Aliran", "Barang Masuk", "Barang Keluar"].map((flow) => (
-            <button
-              key={flow}
-              className={`btn-flow-filter ${activeFlowFilter === flow ? "active" : ""}`}
-              onClick={() => setActiveFlowFilter(flow)}
-            >
-              {flow}
-            </button>
-          ))}
+      <div className="card shadow-sm">
+        <div className="card-body">
+          {loading ? <div className="spinner-border" role="status" aria-label="Memuat data" /> : reports.length === 0 ? <p className="text-muted mb-0">Data belum tersedia</p> : (
+            <div className="table-responsive">
+              <table className="table align-middle">
+                <thead><tr><th>Tipe</th><th>Barang</th><th>Quantity</th><th>Status</th><th>User</th><th>Tanggal</th></tr></thead>
+                <tbody>
+                  {reports.map((row) => (
+                    <tr key={`${row.type || row.transaction_type}-${row.id}`}>
+                      <td>{row.type || row.transaction_type || '-'}</td>
+                      <td>{getItemName(row)}</td>
+                      <td>{row.quantity}</td>
+                      <td>{row.status || '-'}</td>
+                      <td>{getUserName(row)}</td>
+                      <td>{formatDate(row.created_at || row.received_at || row.released_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* ── Laporan Data Table ── */}
-      <div className="table-card-wrapper">
-        <table className="laporan-table">
-          <thead>
-            <tr>
-              <th>Kode ID</th>
-              <th>Barang</th>
-              <th>Tipe Aliran</th>
-              <th>Jumlah (QTY)</th>
-              <th>Subjek Asal/Tujuan</th>
-              <th>Operator</th>
-              <th>Status Kerja</th>
-              <th style={{ textAlign: "right" }}>Tanggal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredData.length === 0 ? (
-              <tr>
-                <td colSpan="8" style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8" }}>
-                  <Inbox size={32} style={{ display: "block", margin: "0 auto 8px", color: "#cbd5e1" }} />
-                  Tidak ada transaksi mutasi yang cocok dengan filter saat ini.
-                </td>
-              </tr>
-            ) : (
-              filteredData.map((row) => (
-                <tr key={row.id}>
-                  <td className="td-kode-id font-mono">{row.id}</td>
-                  <td>
-                    <div className="item-info-cell">
-                      <span className="item-name font-sora">{row.itemName}</span>
-                      <span className="item-sub-id font-mono">ID: {row.itemId}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`badge-aliran ${row.type.toLowerCase()}`}>
-                      {row.type}
-                    </span>
-                  </td>
-                  <td className="font-mono" style={{ fontWeight: 600 }}>{row.qty} pcs</td>
-                  <td style={{ color: "#475569" }}>{row.originDestination}</td>
-                  <td style={{ fontWeight: 500 }}>{row.operator}</td>
-                  <td>
-                    <span className={`badge-status ${row.status.toLowerCase()}`}>
-                      {row.status}
-                    </span>
-                  </td>
-                  <td className="font-mono" style={{ textAlign: "right", color: "#64748b" }}>
-                    {row.date}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-    </div>
-  );
+    </section>
+  )
 }

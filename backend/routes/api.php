@@ -2,6 +2,14 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\ActivityLogController;
+use App\Http\Controllers\Api\V1\AdminController;
+use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\ItemController;
+use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\StockInController;
+use App\Http\Controllers\Api\V1\StockOutController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,32 +32,42 @@ Route::get('/health', function () {
 });
 
 // API v1 routes
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->name('api.v1.')->group(function () {
     // Public routes
-    Route::post('/auth/login', \App\Http\Controllers\Api\V1\AuthController::class . '@login');
-    Route::post('/auth/register', \App\Http\Controllers\Api\V1\AuthController::class . '@register');
+    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/register', [AuthController::class, 'register']);
 
     // Protected routes (require authentication)
     Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/auth/logout', \App\Http\Controllers\Api\V1\AuthController::class . '@logout');
-        Route::get('/auth/me', \App\Http\Controllers\Api\V1\AuthController::class . '@me');
-        Route::put('/auth/profile', \App\Http\Controllers\Api\V1\AuthController::class . '@updateProfile');
+        Route::post('/auth/logout', [AuthController::class, 'logout']);
+        Route::get('/auth/me', [AuthController::class, 'me']);
+        Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
 
-        Route::get('/items/low-stock', \App\Http\Controllers\Api\V1\ItemController::class . '@lowStock');
-        Route::post('/stock-ins/{id}/upload', \App\Http\Controllers\Api\V1\StockInController::class . '@uploadProof');
-        Route::post('/stock-outs/{id}/upload', \App\Http\Controllers\Api\V1\StockOutController::class . '@uploadProof');
+        Route::get('/items/low-stock', [ItemController::class, 'lowStock']);
+        Route::post('/stock-ins/{id}/upload', [StockInController::class, 'uploadProof']);
+        Route::post('/stock-outs/{id}/upload', [StockOutController::class, 'uploadProof']);
+
+        Route::get('/admin/reports/export', [ReportController::class, 'export']);
+
+        Route::middleware('role:admin')->group(function () {
+            Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
+            Route::get('/admin/users', [AdminController::class, 'users']);
+            Route::post('/admin/users', [AdminController::class, 'storeUser']);
+            Route::get('/admin/users/{id}', [AdminController::class, 'showUser']);
+            Route::put('/admin/users/{id}', [AdminController::class, 'updateUser']);
+            Route::delete('/admin/users/{id}', [AdminController::class, 'destroyUser']);
+            Route::get('/admin/reports', [ReportController::class, 'index']);
+            Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+            Route::get('/activity-logs/{id}', [ActivityLogController::class, 'show']);
+        });
 
         // Resource routes
         Route::apiResources([
-            'categories' => \App\Http\Controllers\Api\V1\CategoryController::class,
-            'items' => \App\Http\Controllers\Api\V1\ItemController::class,
-            'stock-ins' => \App\Http\Controllers\Api\V1\StockInController::class,
-            'stock-outs' => \App\Http\Controllers\Api\V1\StockOutController::class,
+            'categories' => CategoryController::class,
+            'items' => ItemController::class,
+            'stock-ins' => StockInController::class,
+            'stock-outs' => StockOutController::class,
         ]);
-
-        // Activity logs (read-only for users, admin only for deletion)
-        Route::get('/activity-logs', \App\Http\Controllers\Api\V1\ActivityLogController::class . '@index');
-        Route::get('/activity-logs/{id}', \App\Http\Controllers\Api\V1\ActivityLogController::class . '@show');
     });
 });
 

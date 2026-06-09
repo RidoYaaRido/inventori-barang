@@ -1,170 +1,200 @@
-import { useState } from "react";
-import { CATEGORIES, ITEMS } from "./utils/data";
-import ItemCard from "./components/ItemCard";
-import Modal from "./components/Modal";
-import "./utils/style.css";
-import {
-  Search,
-  Plus,
-  PackageOpen,
-  Layers,
-  Wifi,
-  Monitor,
-  Armchair,
-  FileText,
-  Tag,
-  X,
-} from "lucide-react";
+import { useEffect, useState } from 'react'
+import { categoryApi } from '../../../api/categoryApi'
+import { itemApi } from '../../../api/itemApi'
+import { asArray, getApiData, getApiMessage } from '../../../api/response'
 
+const initialForm = {
+  category_id: '',
+  name: '',
+  sku: '',
+  description: '',
+  unit_price: '',
+  stock_quantity: 0,
+  unit: '',
+  is_active: true,
+}
+
+const getListData = (response) => {
+  const data = getApiData(response)
+  return asArray(data)
+}
 
 export default function KelolaBarang() {
-  const [items, setItems]           = useState(ITEMS);
-  const [activeCat, setActiveCat]   = useState("all");
-  const [activeFilter, setFilter]   = useState("semua");
-  const [sortBy, setSortBy]         = useState("nama-az");
-  const [search, setSearch]         = useState("");
-  const [modal, setModal]           = useState(null); // null | "add" | item
- 
-  const handleDelete = (id) => setItems((prev) => prev.filter((i) => i.id !== id));
- 
-  const filtered = items
-    .filter((i) => activeCat === "all" || i.category === activeCat)
-    .filter((i) => activeFilter === "semua" || i.status === activeFilter)
-    .filter((i) => {
-      const q = search.toLowerCase();
-      return (
-        i.name.toLowerCase().includes(q) ||
-        i.sku.toLowerCase().includes(q)
-      );
+  const [items, setItems] = useState([])
+  const [categories, setCategories] = useState([])
+  const [form, setForm] = useState(initialForm)
+  const [editingId, setEditingId] = useState(null)
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  async function loadData(keyword = search) {
+    setLoading(true)
+    setError('')
+
+    try {
+      const [itemsRes, categoriesRes] = await Promise.all([
+        itemApi.list(keyword ? { search: keyword } : {}),
+        categoryApi.list(),
+      ])
+      setItems(getListData(itemsRes))
+      setCategories(getListData(categoriesRes))
+    } catch (err) {
+      setError(getApiMessage(err, 'Gagal memuat barang atau kategori.'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(() => loadData(search), 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  function updateField(event) {
+    const { name, value, type, checked } = event.target
+    setForm((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value }))
+  }
+
+  function startEdit(item) {
+    setEditingId(item.id)
+    setForm({
+      category_id: item.category_id || item.category?.id || '',
+      name: item.name || '',
+      sku: item.sku || '',
+      description: item.description || '',
+      unit_price: item.unit_price || '',
+      stock_quantity: item.stock_quantity ?? item.stock ?? 0,
+      unit: item.unit || '',
+      is_active: item.is_active !== false && item.is_active !== 0,
     })
-    .sort((a, b) => {
-      if (sortBy === "nama-az")    return a.name.localeCompare(b.name);
-      if (sortBy === "nama-za")    return b.name.localeCompare(a.name);
-      if (sortBy === "harga-asc")  return a.price - b.price;
-      if (sortBy === "harga-desc") return b.price - a.price;
-      if (sortBy === "stok-asc")   return a.stock - b.stock;
-      return 0;
-    });
- 
-  const STATUS_FILTERS = [
-    { key: "semua",    label: "Semua"    },
-    { key: "tersedia", label: "Tersedia" },
-    { key: "kritis",   label: "Kritis"   },
-    { key: "habis",    label: "Habis"    },
-  ];
- 
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    setSaving(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      if (editingId) {
+        await itemApi.update(editingId, form)
+        setSuccess('Barang berhasil diperbarui.')
+      } else {
+        await itemApi.create(form)
+        setSuccess('Barang berhasil ditambahkan.')
+      }
+      setForm(initialForm)
+      setEditingId(null)
+      await loadData()
+    } catch (err) {
+      setError(getApiMessage(err, 'Gagal menyimpan barang.'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete(id) {
+    if (!window.confirm('Hapus/nonaktifkan barang ini?')) return
+
+    try {
+      await itemApi.remove(id)
+      setSuccess('Barang berhasil dihapus/nonaktifkan.')
+      await loadData()
+    } catch (err) {
+      setError(getApiMessage(err, 'Gagal menghapus barang.'))
+    }
+  }
+
   return (
-    <div className="kb-page">
- 
-      {/* ── Header ── */}
-      <div className="kb-header">
+    <section className="container-fluid py-4">
+      <div className="d-flex flex-wrap justify-content-between gap-3 mb-3">
         <div>
-          <h1 className="kb-header__title">Kelola Barang &amp; Inventaris</h1>
-          <p className="kb-header__sub">
-            Tambahkan, ubah rincian, atau hapus SKU barang di dalam inventaris.
-          </p>
+          <h2>Kelola Barang</h2>
+          <p className="text-muted mb-0">Tambah, edit, cari, dan hapus barang.</p>
         </div>
-        <button className="kb-btn-primary" onClick={() => setModal("add")}>
-          <Plus size={16} />
-          Tambah SKU Baru
-        </button>
+        <input className="form-control" style={{ maxWidth: 320 }} placeholder="Search barang" value={search} onChange={(event) => setSearch(event.target.value)} />
       </div>
- 
-      {/* ── Filter Panel ── */}
-      <div className="kb-filter-panel">
- 
-        {/* Row 1: search + status + sort */}
-        <div className="kb-filter-row">
- 
-          {/* Search */}
-          <div className="kb-search-wrap">
-            <span className="kb-search-icon">
-              <Search size={15} />
-            </span>
-            <input
-              className="kb-search-input"
-              placeholder="Cari berdasarkan nama, SKU, supplier..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
- 
-          {/* Status filters */}
-          <div className="kb-status-filters">
-            {STATUS_FILTERS.map((f) => (
-              <button
-                key={f.key}
-                className={`kb-filter-btn${activeFilter === f.key ? " kb-filter-btn--active" : ""}`}
-                onClick={() => setFilter(f.key)}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
- 
-          {/* Sort */}
-          <div className="kb-sort-wrap">
-            <span className="kb-sort-label">Urut:</span>
-            <select
-              className="kb-sort-select"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-            >
-              <option value="nama-az">Nama A–Z</option>
-              <option value="nama-za">Nama Z–A</option>
-              <option value="harga-asc">Harga Terendah</option>
-              <option value="harga-desc">Harga Tertinggi</option>
-              <option value="stok-asc">Stok Terendah</option>
-            </select>
-          </div>
-        </div>
- 
-        {/* Row 2: category pills */}
-        <div className="kb-cat-pills">
-          {CATEGORIES.map(({ id, label, count, Icon }) => (
-            <button
-              key={id}
-              className={`kb-cat-pill${activeCat === id ? " kb-cat-pill--active" : ""}`}
-              onClick={() => setActiveCat(id)}
-            >
-              <Icon size={13} />
-              {label} ({count})
-            </button>
-          ))}
+
+      {error && <div className="alert alert-danger">{error}</div>}
+      {success && <div className="alert alert-success">{success}</div>}
+
+      <div className="card shadow-sm mb-4">
+        <div className="card-body">
+          <h5>{editingId ? 'Edit Barang' : 'Tambah Barang'}</h5>
+          <form className="row g-3" onSubmit={handleSubmit}>
+            <Field name="name" label="Nama" value={form.name} onChange={updateField} required />
+            <Field name="sku" label="SKU" value={form.sku} onChange={updateField} required />
+            <div className="col-md-4">
+              <label className="form-label">Kategori</label>
+              <select className="form-select" name="category_id" value={form.category_id} onChange={updateField} required>
+                <option value="">Pilih kategori</option>
+                {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+              </select>
+            </div>
+            <Field name="unit_price" label="Harga Satuan" type="number" value={form.unit_price} onChange={updateField} />
+            <Field name="stock_quantity" label="Stok" type="number" value={form.stock_quantity} onChange={updateField} />
+            <Field name="unit" label="Satuan" value={form.unit} onChange={updateField} />
+            <div className="col-12">
+              <label className="form-label">Deskripsi</label>
+              <textarea className="form-control" name="description" rows="2" value={form.description} onChange={updateField} />
+            </div>
+            <div className="col-12 form-check ms-2">
+              <input className="form-check-input" id="item-active" name="is_active" type="checkbox" checked={form.is_active} onChange={updateField} />
+              <label className="form-check-label" htmlFor="item-active">Aktif</label>
+            </div>
+            <div className="col-12 d-flex gap-2">
+              <button className="btn btn-primary" disabled={saving} type="submit">{saving ? 'Menyimpan...' : 'Simpan'}</button>
+              {editingId && <button className="btn btn-outline-secondary" type="button" onClick={() => { setEditingId(null); setForm(initialForm) }}>Batal</button>}
+            </div>
+          </form>
         </div>
       </div>
- 
-      {/* ── Result count ── */}
-      <p className="kb-result-count">
-        Menampilkan <strong>{filtered.length}</strong> dari {items.length} barang
-      </p>
- 
-      {/* ── Grid / Empty ── */}
-      {filtered.length === 0 ? (
-        <div className="kb-empty">
-          <PackageOpen size={52} className="kb-empty__icon" />
-          Tidak ada barang yang cocok dengan filter ini.
-        </div>
-      ) : (
-        <div className="kb-grid">
-          {filtered.map((item) => (
-            <ItemCard
-              key={item.id}
-              item={item}
-              onEdit={setModal}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
-      )}
- 
-      {/* ── Modal ── */}
-      {modal && (
-        <Modal
-          item={modal === "add" ? null : modal}
-          onClose={() => setModal(null)}
-        />
-      )}
+
+      <DataTable items={items} loading={loading} onEdit={startEdit} onDelete={handleDelete} />
+    </section>
+  )
+}
+
+function Field({ label, ...props }) {
+  return (
+    <div className="col-md-4">
+      <label className="form-label">{label}</label>
+      <input className="form-control" {...props} />
     </div>
-  );
+  )
+}
+
+function DataTable({ items, loading, onEdit, onDelete }) {
+  return (
+    <div className="card shadow-sm">
+      <div className="card-body">
+        {loading ? <div className="spinner-border" role="status" aria-label="Memuat data" /> : items.length === 0 ? <p className="text-muted mb-0">Data belum tersedia</p> : (
+          <div className="table-responsive">
+            <table className="table align-middle">
+              <thead><tr><th>Nama</th><th>SKU</th><th>Kategori</th><th>Stok</th><th>Satuan</th><th>Status</th><th>Aksi</th></tr></thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.name}</td>
+                    <td>{item.sku}</td>
+                    <td>{item.category?.name || item.category_name || '-'}</td>
+                    <td>{item.stock_quantity ?? item.stock ?? 0}</td>
+                    <td>{item.unit}</td>
+                    <td>{item.is_active === false || item.is_active === 0 ? 'Tidak Aktif' : 'Aktif'}</td>
+                    <td className="d-flex gap-2">
+                      <button className="btn btn-sm btn-outline-primary" type="button" onClick={() => onEdit(item)}>Edit</button>
+                      <button className="btn btn-sm btn-outline-danger" type="button" onClick={() => onDelete(item.id)}>Hapus</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
