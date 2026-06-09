@@ -7,6 +7,7 @@ import StaffLayout from '../layouts/StaffLayout'
 import Login from '../pages/auth/Login'
 import Register from '../pages/auth/Register'
 import Dashboard from '../pages/Dashboard'
+import Homepage from '../pages/homepage/index.jsx'
 
 // import admin components
 import AdminDashboard from '../pages/admin/dashboard-admin/AdminDashboard.jsx'
@@ -17,7 +18,7 @@ import ValidasiTransaksi from '../pages/admin/validasi-transaksi/ValidateTransac
 import Laporan from '../pages/admin/Laporan/Reports.jsx'
 import LogAktivitas from '../pages/admin/log-aktivitas/ActivityLogs.jsx'
 
-// import staff componentsstaff
+// import staff components
 import StaffDashboard from '../pages/staff/StaffDashboard'
 import ItemDetail from '../pages/staff/ItemDetail'
 import ItemList from '../pages/staff/ItemList'
@@ -45,6 +46,9 @@ function AppRouter() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          {/* ── Homepage Route (Public) ──────────── */}
+          <Route path="/" element={<Homepage />} />
+
           {/* ── Auth Routes (Public) ──────────────── */}
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<Login />} />
@@ -95,7 +99,6 @@ function AppRouter() {
           </Route>
 
           {/* ── Fallback Routes ───────────────────── */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </AuthProvider>
