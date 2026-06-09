@@ -6,6 +6,7 @@ import AdminLayout from '../layouts/AdminLayout'
 import StaffLayout from '../layouts/StaffLayout'
 import Login from '../pages/auth/Login'
 import Register from '../pages/auth/Register'
+import HomePage from '../pages/homepage/HomePage'
 import Dashboard from '../pages/Dashboard'
 
 // import admin components
@@ -103,9 +104,9 @@ function AppRouter() {
             </Route>
           </Route>
 
-          {/* ── Fallback Routes ───────────────────── */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          {/* ── Public Landing Page ───────────────── */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="*" element={<HomePage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
