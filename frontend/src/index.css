@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   --surface: #f8f9ff;
   --surface-container: rgba(255, 255, 255, 0.42);
