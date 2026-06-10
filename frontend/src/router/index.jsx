@@ -64,6 +64,7 @@ function AppRouter() {
               <Route path="/admin/users" element={<KelolaStaff />} />
               <Route path="/admin/reports" element={<Laporan />} />
               <Route path="/admin/logs" element={<LogAktivitas />} />
+              <Route path="/admin/activity-log" element={<LogAktivitas />} />
               <Route path="/admin/kelola-barang" element={<KelolaBarang />} />
               <Route path="/admin/kelola-kategori" element={<KelolaKategori />} />
               <Route path="/admin/kelola-staff" element={<KelolaStaff />} />

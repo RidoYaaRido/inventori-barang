@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Item;
 use App\Models\StockIn;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Schema;
@@ -75,7 +76,7 @@ class StockInController extends Controller
 
         $item = Item::find($validated['item_id']);
         $item->increment('stock_quantity', $validated['quantity']);
-        $this->writeActivityLog($request, 'create stock in', $stockIn, null, $stockIn->toArray());
+        ActivityLogger::log('barang_masuk', $stockIn, "Barang masuk: {$stockIn->reference_number}", $request, null, $stockIn->toArray());
 
         return $this->successResponse(
             'Barang masuk berhasil dicatat',
@@ -154,7 +155,7 @@ class StockInController extends Controller
 
         $oldValues = $stockIn->toArray();
         $stockIn->update($validated);
-        $this->writeActivityLog($request, 'update stock in', $stockIn, $oldValues, $stockIn->fresh()->toArray());
+        ActivityLogger::log('barang_masuk', $stockIn, "Update barang masuk: {$stockIn->reference_number}", $request, $oldValues, $stockIn->fresh()->toArray());
 
         return $this->successResponse(
             'Barang masuk berhasil diperbarui',
@@ -187,7 +188,7 @@ class StockInController extends Controller
         $stockIn->item->decrement('stock_quantity', $stockIn->quantity);
         $oldValues = $stockIn->toArray();
         $stockIn->delete();
-        $this->writeActivityLog(request(), 'delete stock in', $stockIn, $oldValues, null);
+        ActivityLogger::log('barang_masuk', $stockIn, "Hapus barang masuk: {$stockIn->reference_number}", request(), $oldValues, null);
 
         return $this->successResponse('Barang masuk berhasil dihapus');
     }
@@ -225,7 +226,9 @@ class StockInController extends Controller
         $path       = $file->store('transactions', 'public');
         $publicPath = 'storage/' . $path;
 
+        $oldValues = $stockIn->toArray();
         $stockIn->update(['attachment_path' => $publicPath]);
+        ActivityLogger::log('upload_bukti', $stockIn, "Upload bukti barang masuk: {$stockIn->reference_number}", $request, $oldValues, $stockIn->fresh()->toArray());
 
         return $this->successResponse('Bukti transaksi berhasil diupload', [
             'id'              => $stockIn->id,

@@ -16,7 +16,7 @@ const adminMenus = [
   { icon: 'category', label: 'Kelola Kategori', path: '/admin/categories' },
   { icon: 'staff', label: 'Kelola Staff', path: '/admin/users' },
   { icon: 'report', label: 'Laporan', path: '/admin/reports' },
-  { icon: 'history', label: 'Activity Log', path: '/admin/logs' },
+  { icon: 'history', label: 'Activity Log', path: '/admin/activity-log' },
 ]
 
 const iconPaths = {

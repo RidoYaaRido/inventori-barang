@@ -3,13 +3,10 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\ActivityLog;
 use App\Models\User;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 
 class AuthController extends Controller
 {
@@ -23,6 +20,8 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
+            ActivityLogger::log('failed_login', $user, 'Gagal login untuk email: ' . $request->email, $request, null, null, $user);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Email atau password salah.',
@@ -37,7 +36,7 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
-        $this->writeActivityLogSafely($request, $user, 'login', 'User login');
+        ActivityLogger::log('login', $user, 'User login', $request, null, null, $user);
 
         return response()->json([
             'success' => true,
@@ -79,7 +78,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $this->writeActivityLog($request, $request->user(), 'logout', 'User logout');
+        ActivityLogger::log('logout', $request->user(), 'User logout', $request);
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
@@ -115,34 +114,4 @@ class AuthController extends Controller
         ]);
     }
 
-    private function writeActivityLog(Request $request, User $user, string $action, string $description): void
-    {
-        if (!Schema::hasTable('activity_logs')) {
-            return;
-        }
-
-        ActivityLog::create([
-            'user_id' => $user->id,
-            'action' => $action,
-            'model_type' => User::class,
-            'model_id' => $user->id,
-            'old_values' => null,
-            'new_values' => null,
-            'ip_address' => $request->ip(),
-            'description' => $description,
-        ]);
-    }
-
-    private function writeActivityLogSafely(Request $request, User $user, string $action, string $description): void
-    {
-        try {
-            $this->writeActivityLog($request, $user, $action, $description);
-        } catch (\Throwable $exception) {
-            Log::warning('Activity log gagal ditulis saat auth.', [
-                'user_id' => $user->id,
-                'action' => $action,
-                'error' => $exception->getMessage(),
-            ]);
-        }
-    }
 }

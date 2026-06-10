@@ -17,7 +17,14 @@ class ActivityLog extends Model
         'old_values',
         'new_values',
         'ip_address',
-        'description'
+        'user_agent',
+        'browser',
+        'operating_system',
+        'device_type',
+        'country',
+        'city',
+        'isp',
+        'description',
     ];
 
     protected $casts = [

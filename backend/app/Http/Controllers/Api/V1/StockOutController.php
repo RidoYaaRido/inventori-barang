@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Item;
 use App\Models\StockOut;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Schema;
@@ -85,7 +86,7 @@ class StockOutController extends Controller
 
         $stockOut = StockOut::create($validated);
         $item->decrement('stock_quantity', $validated['quantity']);
-        $this->writeActivityLog($request, 'create stock out', $stockOut, null, $stockOut->toArray());
+        ActivityLogger::log('barang_keluar', $stockOut, "Barang keluar: {$stockOut->reference_number}", $request, null, $stockOut->toArray());
 
         return $this->successResponse(
             'Barang keluar berhasil dicatat',
@@ -163,7 +164,7 @@ class StockOutController extends Controller
 
         $oldValues = $stockOut->toArray();
         $stockOut->update($validated);
-        $this->writeActivityLog($request, 'update stock out', $stockOut, $oldValues, $stockOut->fresh()->toArray());
+        ActivityLogger::log('barang_keluar', $stockOut, "Update barang keluar: {$stockOut->reference_number}", $request, $oldValues, $stockOut->fresh()->toArray());
 
         return $this->successResponse(
             'Barang keluar berhasil diperbarui',
@@ -186,7 +187,7 @@ class StockOutController extends Controller
         $stockOut->item->increment('stock_quantity', $stockOut->quantity);
         $oldValues = $stockOut->toArray();
         $stockOut->delete();
-        $this->writeActivityLog(request(), 'delete stock out', $stockOut, $oldValues, null);
+        ActivityLogger::log('barang_keluar', $stockOut, "Hapus barang keluar: {$stockOut->reference_number}", request(), $oldValues, null);
 
         return $this->successResponse('Barang keluar berhasil dihapus');
     }
@@ -224,7 +225,9 @@ class StockOutController extends Controller
         $path       = $file->store('transactions', 'public');
         $publicPath = 'storage/' . $path;
 
+        $oldValues = $stockOut->toArray();
         $stockOut->update(['attachment_path' => $publicPath]);
+        ActivityLogger::log('upload_bukti', $stockOut, "Upload bukti barang keluar: {$stockOut->reference_number}", $request, $oldValues, $stockOut->fresh()->toArray());
 
         return $this->successResponse('Bukti transaksi berhasil diupload', [
             'id'              => $stockOut->id,

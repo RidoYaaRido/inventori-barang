@@ -9,6 +9,7 @@ use App\Models\Item;
 use App\Models\StockIn;
 use App\Models\StockOut;
 use App\Models\User;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
@@ -79,7 +80,7 @@ class AdminController extends Controller
         $validated['is_active'] = $validated['is_active'] ?? true;
 
         $user = User::create($validated);
-        $this->writeActivityLog($request, 'create user', $user, null, $user->toArray());
+        ActivityLogger::log('create_user', $user, "Create user: {$user->email}", $request, null, $user->toArray());
 
         return $this->successResponse('User staff berhasil dibuat', $user, Response::HTTP_CREATED);
     }
@@ -127,7 +128,7 @@ class AdminController extends Controller
 
         $oldValues = $user->toArray();
         $user->update($validated);
-        $this->writeActivityLog($request, 'update user', $user, $oldValues, $user->fresh()->toArray());
+        ActivityLogger::log('update_user', $user, "Update user: {$user->email}", $request, $oldValues, $user->fresh()->toArray());
 
         return $this->successResponse('User berhasil diperbarui', $user->fresh());
     }
@@ -142,7 +143,7 @@ class AdminController extends Controller
 
         $oldValues = $user->toArray();
         $user->update(['is_active' => false]);
-        $this->writeActivityLog($request, 'deactivate user', $user, $oldValues, $user->fresh()->toArray());
+        ActivityLogger::log('deactivate_user', $user, "Deactivate user: {$user->email}", $request, $oldValues, $user->fresh()->toArray());
 
         return $this->successResponse('User berhasil dinonaktifkan', $user->fresh());
     }

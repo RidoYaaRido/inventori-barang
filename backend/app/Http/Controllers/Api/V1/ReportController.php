@@ -7,6 +7,7 @@ use App\Models\ActivityLog;
 use App\Models\Item;
 use App\Models\StockIn;
 use App\Models\StockOut;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Schema;
@@ -55,7 +56,7 @@ class ReportController extends Controller
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
 
-        $this->writeActivityLog($request, 'export report', 'Export laporan inventory CSV');
+        ActivityLogger::log('export_laporan', null, 'Export laporan inventory CSV', $request);
 
         return response()->streamDownload(function () {
             $handle = fopen('php://output', 'w');

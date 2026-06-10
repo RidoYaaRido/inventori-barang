@@ -11,5 +11,8 @@ export const adminApi = {
     params,
     responseType: 'blob',
   }),
-  activityLogs: (params = {}) => axiosClient.get('/activity-logs', { params }),
+  activityLogs: (params = {}) => axiosClient.get('/admin/activity-logs', { params }),
+  securitySummary: () => axiosClient.get('/admin/security-monitoring/summary'),
+  recentLogins: (params = {}) => axiosClient.get('/admin/security-monitoring/recent-logins', { params }),
+  suspiciousIps: (params = {}) => axiosClient.get('/admin/security-monitoring/suspicious-ips', { params }),
 }

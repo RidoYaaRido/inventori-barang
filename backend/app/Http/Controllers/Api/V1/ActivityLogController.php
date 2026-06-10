@@ -15,9 +15,11 @@ class ActivityLogController extends Controller
         $validator = Validator::make($request->all(), [
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'action' => ['nullable', 'string', 'max:255'],
+            'ip_address' => ['nullable', 'string', 'max:255'],
             'model_type' => ['nullable', 'string', 'max:255'],
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'search' => ['nullable', 'string', 'max:255'],
         ]);
 
         if ($validator->fails()) {
@@ -38,16 +40,35 @@ class ActivityLogController extends Controller
             $query->where('action', $request->query('action'));
         }
 
+        if ($request->filled('ip_address')) {
+            $query->where('ip_address', $request->query('ip_address'));
+        }
+
         if ($request->filled('model_type')) {
             $query->where('model_type', $request->query('model_type'));
         }
 
-        if ($request->filled('start_date')) {
-            $query->whereDate('created_at', '>=', $request->date('start_date'));
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date('date_from'));
         }
 
-        if ($request->filled('end_date')) {
-            $query->whereDate('created_at', '<=', $request->date('end_date'));
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date('date_to'));
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->string('search')->toString();
+            $query->where(function ($logQuery) use ($search) {
+                $logQuery->where('description', 'like', "%{$search}%")
+                    ->orWhere('action', 'like', "%{$search}%")
+                    ->orWhere('ip_address', 'like', "%{$search}%")
+                    ->orWhere('browser', 'like', "%{$search}%")
+                    ->orWhere('operating_system', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
+            });
         }
 
         $perPage = min(max((int) $request->query('per_page', 15), 1), 100);

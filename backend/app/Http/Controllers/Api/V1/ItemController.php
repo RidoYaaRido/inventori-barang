@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Item;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Schema;
@@ -81,7 +82,7 @@ class ItemController extends Controller
         $item = Item::create($validator->validated());
         $item->load('category');
 
-        $this->writeActivityLog($request, 'create', $item, null, $item->toArray());
+        ActivityLogger::log('tambah_barang', $item, "Tambah barang: {$item->name}", $request, null, $item->toArray());
 
         return $this->successResponse(
             'Barang berhasil dibuat',
@@ -114,18 +115,18 @@ class ItemController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'category_id' => ['required', 'exists:categories,id'],
-            'name' => ['required', 'string', 'max:255'],
+            'category_id' => ['sometimes', 'exists:categories,id'],
+            'name' => ['sometimes', 'string', 'max:255'],
             'sku' => [
-                'required',
+                'sometimes',
                 'string',
                 'max:255',
                 Rule::unique('items', 'sku')->ignore($item->id),
             ],
             'description' => ['nullable', 'string'],
-            'unit_price' => ['required', 'numeric', 'min:0'],
-            'stock_quantity' => ['required', 'integer', 'min:0'],
-            'unit' => ['required', 'string', 'max:50'],
+            'unit_price' => ['sometimes', 'numeric', 'min:0'],
+            'stock_quantity' => ['sometimes', 'integer', 'min:0'],
+            'unit' => ['sometimes', 'string', 'max:50'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
@@ -138,7 +139,7 @@ class ItemController extends Controller
         $item->update($validator->validated());
         $item->load('category');
 
-        $this->writeActivityLog($request, 'update', $item, $oldValues, $item->toArray());
+        ActivityLogger::log('edit_barang', $item, "Edit barang: {$item->name}", $request, $oldValues, $item->toArray());
 
         return $this->successResponse('Barang berhasil diperbarui', $item);
     }
@@ -159,7 +160,7 @@ class ItemController extends Controller
 
         $item->update(['is_active' => false]);
 
-        $this->writeActivityLog($request, 'delete', $item, $oldValues, $item->fresh()->toArray());
+        ActivityLogger::log('hapus_barang', $item, "Hapus barang: {$item->name}", $request, $oldValues, $item->fresh()->toArray());
 
         return $this->successResponse('Barang berhasil dinonaktifkan', $item->fresh('category'));
     }

@@ -203,6 +203,40 @@ function LowStockTable({ rows }) {
   )
 }
 
+function SecurityTable({ title, rows, type }) {
+  return (
+    <ChartCard title={title}>
+      {rows.length === 0 ? (
+        <p style={{ margin: 0, color: '#94a3b8', fontSize: 13 }}>Data belum tersedia</p>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <tbody>
+              {rows.slice(0, 6).map((row) => (
+                <tr key={`${type}-${row.id ?? row.ip_address}`}>
+                  <td style={{ padding: '10px 8px', borderBottom: '1px solid #f1f5f9', color: '#0f172a', fontWeight: 700 }}>
+                    {type === 'ip' ? row.ip_address : getUserName(row)}
+                    <div style={{ color: '#94a3b8', fontSize: 10, marginTop: 2 }}>
+                      {type === 'ip'
+                        ? `${row.failed_login_count} failed login`
+                        : type === 'login'
+                          ? [row.ip_address, row.city, row.country].filter(Boolean).join(' - ') || 'login'
+                          : row.action}
+                    </div>
+                  </td>
+                  <td style={{ padding: '10px 8px', borderBottom: '1px solid #f1f5f9', color: '#64748b', textAlign: 'right' }}>
+                    {formatDate(row.last_attempt_at ?? row.created_at)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </ChartCard>
+  )
+}
+
 // ─── Proses data untuk chart ───────────────────────────────────
 function buildBarData(stockIns, stockOuts) {
   // Kelompokkan per tanggal (7 hari terakhir)
@@ -249,6 +283,8 @@ const PIE_COLORS = [TEAL, BLUE, GREEN, ORANGE, RED, PURPLE]
 // ─── Main Component ───────────────────────────────────────────
 function AdminDashboard() {
   const [dashboard, setDashboard] = useState(null)
+  const [security, setSecurity] = useState(null)
+  const [recentLogins, setRecentLogins] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -257,8 +293,14 @@ function AdminDashboard() {
       setLoading(true)
       setError('')
       try {
-        const response = await adminApi.dashboard()
-        setDashboard(getApiData(response, {}))
+        const [dashboardResponse, securityResponse, recentLoginsResponse] = await Promise.all([
+          adminApi.dashboard(),
+          adminApi.securitySummary(),
+          adminApi.recentLogins({ limit: 10 }),
+        ])
+        setDashboard(getApiData(dashboardResponse, {}))
+        setSecurity(getApiData(securityResponse, {}))
+        setRecentLogins(asArray(getApiData(recentLoginsResponse, [])))
       } catch (err) {
         setError(getApiMessage(err, 'Gagal memuat dashboard admin.'))
       } finally {
@@ -271,6 +313,8 @@ function AdminDashboard() {
   const lowStockItems  = asArray(dashboard?.low_stock_items)
   const recentStockIn  = asArray(dashboard?.recent_stock_ins)
   const recentStockOut = asArray(dashboard?.recent_stock_outs)
+  const latestActivity = asArray(security?.latest_activity)
+  const suspiciousIps = asArray(security?.suspicious_ips)
   const barData        = buildBarData(recentStockIn, recentStockOut)
   const pieData        = buildTopItems(recentStockIn, recentStockOut)
 
@@ -281,6 +325,13 @@ function AdminDashboard() {
     { label: 'Stock In',       value: dashboard?.total_stock_ins,   icon: '⬇️', color: TEAL   },
     { label: 'Stock Out',      value: dashboard?.total_stock_outs,  icon: '⬆️', color: PURPLE },
     { label: 'Stok Kritis',    value: lowStockItems.length,         icon: '⚠️', color: RED    },
+  ]
+
+  const securityStats = [
+    { label: 'Login Hari Ini', value: security?.total_login_today, icon: '🔐', color: BLUE },
+    { label: 'Failed Login', value: security?.total_failed_login, icon: '⛔', color: RED },
+    { label: 'Aktivitas Hari Ini', value: security?.total_activity_today, icon: '📋', color: TEAL },
+    { label: 'IP Unik', value: security?.unique_ips_today, icon: '🌐', color: ORANGE },
   ]
 
   return (
@@ -404,6 +455,28 @@ function AdminDashboard() {
             >
               <TransactionTable rows={recentStockOut} type="out" />
             </ChartCard>
+          </div>
+
+          <div style={{ marginTop: 28, marginBottom: 18 }}>
+            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: '#0f172a' }}>Security Monitoring</h3>
+            <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: 13 }}>Ringkasan akses, IP, dan aktivitas terbaru.</p>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+            gap: 18,
+            marginBottom: 20,
+          }}>
+            {securityStats.map((s) => (
+              <StatCard key={s.label} {...s} />
+            ))}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+            <SecurityTable title="Aktivitas Terbaru" rows={latestActivity} type="activity" />
+            <SecurityTable title="Recent Logins" rows={recentLogins} type="login" />
+            <SecurityTable title="Suspicious IPs" rows={suspiciousIps} type="ip" />
           </div>
         </>
       )}

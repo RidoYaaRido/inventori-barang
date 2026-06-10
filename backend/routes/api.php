@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\ItemController;
 use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\SecurityMonitoringController;
 use App\Http\Controllers\Api\V1\StockInController;
 use App\Http\Controllers\Api\V1\StockOutController;
 
@@ -56,8 +57,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::delete('/admin/users/{id}', [AdminController::class, 'destroyUser']);
             Route::get('/admin/reports', [ReportController::class, 'index']);
             Route::get('/admin/reports/export', [ReportController::class, 'export']);
-            Route::get('/activity-logs', [ActivityLogController::class, 'index']);
-            Route::get('/activity-logs/{id}', [ActivityLogController::class, 'show']);
+            Route::get('/admin/activity-logs', [ActivityLogController::class, 'index']);
+            Route::get('/admin/activity-logs/{id}', [ActivityLogController::class, 'show']);
+            Route::get('/admin/security-monitoring/summary', [SecurityMonitoringController::class, 'summary']);
+            Route::get('/admin/security-monitoring/recent-logins', [SecurityMonitoringController::class, 'recentLogins']);
+            Route::get('/admin/security-monitoring/suspicious-ips', [SecurityMonitoringController::class, 'suspiciousIps']);
         });
 
         // Resource routes
