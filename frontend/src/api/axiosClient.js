@@ -8,11 +8,29 @@ const axiosClient = axios.create({
   timeout: 60000,
 })
 
+const isAuthEndpoint = (url = '') => (
+  url.includes('/auth/login') || url.includes('/auth/register')
+)
+
+const redirectToLogin = () => {
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+
+  if (
+    window.location.pathname !== '/login' &&
+    window.location.pathname !== '/register'
+  ) {
+    window.location.href = '/login'
+  }
+}
+
 axiosClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+  } else if (!isAuthEndpoint(config.url)) {
+    redirectToLogin()
   }
 
   return config
@@ -26,12 +44,7 @@ axiosClient.interceptors.response.use(
     }
 
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login'
-      }
+      redirectToLogin()
     }
 
     return Promise.reject(error)

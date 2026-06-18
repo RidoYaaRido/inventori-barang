@@ -1,19 +1,23 @@
 <?php
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Staff\DashboardController;
 use App\Http\Controllers\Staff\BarangController;
 use App\Http\Controllers\Staff\BarangMasukController;
 use App\Http\Controllers\Staff\BarangKeluarController;
 use App\Http\Controllers\Staff\ProfilController;
-use App\Http\Controllers\ItemController;
-use App\Http\Controllers\CategoryController;
 
-Route::get('/', fn() => redirect()->route('login'));
+Route::get('/', fn() => response()->view('welcome'));
 
-Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::get('/login', fn() => response()->view('welcome'))->name('login');
+Route::post('/logout', function (Request $request) {
+    Auth::guard('web')->logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return redirect()->route('login');
+})->middleware('auth')->name('logout');
 
 Route::middleware(['auth', 'role:staff'])->prefix('staff')->name('staff.')->group(function () {
 
@@ -37,19 +41,4 @@ Route::middleware(['auth', 'role:staff'])->prefix('staff')->name('staff.')->grou
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', fn() => view('admin.dashboard'))->name('dashboard');
-});
-
-Route::middleware(['auth'])->group(function () {
-
-    Route::get('/items', [ItemController::class, 'index'])->name('items.index');
-    Route::post('/items', [ItemController::class, 'store'])->name('items.store');
-    Route::get('/items/{barang}', [ItemController::class, 'show'])->name('items.show');
-    Route::put('/items/{barang}', [ItemController::class, 'update'])->name('items.update');
-    Route::delete('/items/{barang}', [ItemController::class, 'destroy'])->name('items.destroy');
-
-    Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
-    Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
-    Route::get('/categories/{category}', [CategoryController::class, 'show'])->name('categories.show');
-    Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
-    Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 });

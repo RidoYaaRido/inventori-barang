@@ -129,7 +129,7 @@ class StockAccessControlTest extends TestCase
 
         $this->actingAs($staffA, 'sanctum')
             ->deleteJson("/api/v1/stock-ins/{$siB->id}")
-            ->assertStatus(404);
+            ->assertForbidden();
 
         $this->assertDatabaseHas('stock_ins', ['id' => $siB->id]);
     }
@@ -245,7 +245,7 @@ class StockAccessControlTest extends TestCase
 
         $this->actingAs($staffA, 'sanctum')
             ->deleteJson("/api/v1/stock-outs/{$soB->id}")
-            ->assertStatus(404);
+            ->assertForbidden();
 
         $this->assertDatabaseHas('stock_outs', ['id' => $soB->id]);
     }

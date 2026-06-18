@@ -13,6 +13,7 @@ class BarangMasukController extends Controller
     public function index()
     {
         $riwayat = BarangMasuk::with(['barang', 'user'])
+            ->where('user_id', Auth::id())
             ->latest()->paginate(10);
         return view('staff.barang-masuk.index', compact('riwayat'));
     }
@@ -30,6 +31,7 @@ class BarangMasukController extends Controller
             'jumlah'           => 'required|integer|min:1',
             'tanggal'          => 'required|date',
             'keterangan'       => 'nullable|string',
+            'supplier'         => 'nullable|string|max:255',
             'bukti_transaksi'  => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ]);
 
@@ -44,21 +46,11 @@ class BarangMasukController extends Controller
                 'barang_id'       => $request->barang_id,
                 'user_id'         => Auth::id(),
                 'jumlah'          => $request->jumlah,
-                'tanggal'         => $request->tanggal,
+                'tanggal_masuk'   => $request->tanggal,
                 'keterangan'      => $request->keterangan,
                 'bukti_transaksi' => $buktiPath,
-            ]);
-
-            BarangMasuk::create([
-                'barang_id'       => $request->barang_id,
-                'user_id'         => Auth::id(),
-                'jumlah'          => $request->jumlah,
-                'tanggal_masuk'   => $request->tanggal_masuk,
-                'keterangan'      => $request->keterangan,
-                'supplier'        => $request->supplier,     
-                'bukti_transaksi' => $buktiPath,
-                'status'          => 'pending',             
-                'supplier' => 'nullable|string|max:255',
+                'status'          => 'pending',
+                'supplier'        => $request->supplier,
             ]);
 
             Barang::find($request->barang_id)

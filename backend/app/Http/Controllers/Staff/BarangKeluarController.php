@@ -13,6 +13,7 @@ class BarangKeluarController extends Controller
     public function index()
     {
         $riwayat = BarangKeluar::with(['barang', 'user'])
+            ->where('user_id', Auth::id())
             ->latest()->paginate(10);
         return view('staff.barang-keluar.index', compact('riwayat'));
     }
@@ -30,6 +31,7 @@ class BarangKeluarController extends Controller
             'jumlah'          => 'required|integer|min:1',
             'tanggal'         => 'required|date',
             'keterangan'      => 'nullable|string',
+            'divisi'          => 'nullable|string|max:255',
             'bukti_transaksi' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ]);
 
@@ -50,21 +52,11 @@ class BarangKeluarController extends Controller
                 'barang_id'       => $request->barang_id,
                 'user_id'         => Auth::id(),
                 'jumlah'          => $request->jumlah,
-                'tanggal_keluar'         => $request->tanggal,
-                'keterangan'      => $request->keterangan,
-                'bukti_transaksi' => $buktiPath,
-            ]);
-
-            BarangKeluar::create([
-                'barang_id'       => $request->barang_id,
-                'user_id'         => Auth::id(),
-                'jumlah'          => $request->jumlah,
-                'tanggal'         => $request->tanggal,
+                'tanggal_keluar'  => $request->tanggal,
                 'keterangan'      => $request->keterangan,
                 'divisi'          => $request->divisi,
                 'bukti_transaksi' => $buktiPath,
-                'status'          => 'pending',             
-                'divisi' => 'nullable|string|max:255', 
+                'status'          => 'pending',
             ]);
 
             $barang->decrement('stok', $request->jumlah);

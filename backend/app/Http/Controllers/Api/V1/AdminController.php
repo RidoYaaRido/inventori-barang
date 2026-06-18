@@ -12,15 +12,19 @@ use App\Models\User;
 use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class AdminController extends Controller
 {
     public function dashboard()
     {
+        Gate::authorize('viewAny', User::class);
+
         $data = [
             'total_items'        => Item::count(),
             'total_categories'   => Category::count(),
@@ -37,6 +41,8 @@ class AdminController extends Controller
 
     public function users(Request $request)
     {
+        Gate::authorize('viewAny', User::class);
+
         $query = User::query()->latest();
 
         if ($request->filled('role')) {
@@ -62,10 +68,12 @@ class AdminController extends Controller
 
     public function storeUser(Request $request)
     {
+        Gate::authorize('create', User::class);
+
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['required', Password::min(8)->mixedCase()->numbers()],
             'role' => ['sometimes', 'in:admin,staff'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
@@ -93,6 +101,8 @@ class AdminController extends Controller
             return $this->notFoundResponse('User tidak ditemukan');
         }
 
+        Gate::authorize('view', $user);
+
         return $this->successResponse('Detail user berhasil diambil', $user);
     }
 
@@ -104,6 +114,8 @@ class AdminController extends Controller
             return $this->notFoundResponse('User tidak ditemukan');
         }
 
+        Gate::authorize('update', $user);
+
         $validator = Validator::make($request->all(), [
             'name' => ['sometimes', 'string', 'max:255'],
             'email' => [
@@ -112,7 +124,7 @@ class AdminController extends Controller
                 'max:255',
                 Rule::unique('users', 'email')->ignore($user->id),
             ],
-            'password' => ['sometimes', 'string', 'min:8'],
+            'password' => ['sometimes', Password::min(8)->mixedCase()->numbers()],
             'role' => ['sometimes', 'in:admin,staff'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
@@ -140,6 +152,8 @@ class AdminController extends Controller
         if (!$user) {
             return $this->notFoundResponse('User tidak ditemukan');
         }
+
+        Gate::authorize('delete', $user);
 
         $oldValues = $user->toArray();
         $user->update(['is_active' => false]);

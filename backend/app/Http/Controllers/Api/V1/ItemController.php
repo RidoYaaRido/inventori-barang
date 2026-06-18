@@ -8,6 +8,7 @@ use App\Models\Item;
 use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -16,6 +17,8 @@ class ItemController extends Controller
 {
     public function index(Request $request)
     {
+        Gate::authorize('viewAny', Item::class);
+
         $query = Item::query()
             ->with('category')
             ->latest();
@@ -48,6 +51,8 @@ class ItemController extends Controller
 
     public function lowStock(Request $request)
     {
+        Gate::authorize('viewAny', Item::class);
+
         $perPage = min(max((int) $request->query('per_page', 15), 1), 100);
 
         $items = Item::with('category')
@@ -60,9 +65,7 @@ class ItemController extends Controller
 
     public function store(Request $request)
     {
-        if ($response = $this->ensureAdmin($request)) {
-            return $response;
-        }
+        Gate::authorize('create', Item::class);
 
         $validator = Validator::make($request->all(), [
             'category_id' => ['required', 'exists:categories,id'],
@@ -99,20 +102,20 @@ class ItemController extends Controller
             return $this->notFoundResponse();
         }
 
+        Gate::authorize('view', $item);
+
         return $this->successResponse('Data berhasil diambil', $item);
     }
 
     public function update(Request $request, $id)
     {
-        if ($response = $this->ensureAdmin($request)) {
-            return $response;
-        }
-
         $item = Item::find($id);
 
         if (!$item) {
             return $this->notFoundResponse();
         }
+
+        Gate::authorize('update', $item);
 
         $validator = Validator::make($request->all(), [
             'category_id' => ['sometimes', 'exists:categories,id'],
@@ -146,15 +149,13 @@ class ItemController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        if ($response = $this->ensureAdmin($request)) {
-            return $response;
-        }
-
         $item = Item::find($id);
 
         if (!$item) {
             return $this->notFoundResponse();
         }
+
+        Gate::authorize('delete', $item);
 
         $oldValues = $item->toArray();
 

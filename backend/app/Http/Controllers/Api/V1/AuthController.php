@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\ActivityLogger;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
@@ -50,19 +53,51 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|min:8|confirmed',
-            'role'     => 'nullable|in:admin,staff',
+            'email'    => ['required', 'email', 'unique:users,email'],
+            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
         ]);
 
-        $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-            'role'     => $request->role ?? 'staff',
-        ]);
+        if ($validator->fails()) {
+            if (
+                $request->filled('email') &&
+                filter_var($request->input('email'), FILTER_VALIDATE_EMAIL) &&
+                User::where('email', $request->input('email'))->exists()
+            ) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Email sudah digunakan',
+                    'errors' => ['email' => ['Email sudah digunakan']],
+                ], 422);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $validated = $validator->validated();
+
+        try {
+            $user = User::create([
+                'name'     => $validated['name'],
+                'email'    => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'role'     => 'staff',
+            ]);
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23000') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Email sudah digunakan',
+                ], 422);
+            }
+
+            throw $exception;
+        }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 

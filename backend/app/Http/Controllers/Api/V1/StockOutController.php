@@ -9,6 +9,7 @@ use App\Models\StockOut;
 use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -43,6 +44,8 @@ class StockOutController extends Controller
     // ─────────────────────────────────────────────────────────────
     public function index()
     {
+        Gate::authorize('viewAny', StockOut::class);
+
         $stockOuts = $this->ownedQuery()
             ->with(['item', 'user'])
             ->latest()
@@ -56,6 +59,8 @@ class StockOutController extends Controller
     // ─────────────────────────────────────────────────────────────
     public function store(Request $request)
     {
+        Gate::authorize('create', StockOut::class);
+
         $validator = Validator::make($request->all(), [
             'item_id'          => ['required', 'exists:items,id'],
             'quantity'         => ['required', 'integer', 'min:1'],
@@ -109,6 +114,8 @@ class StockOutController extends Controller
             return $this->notFoundResponse();
         }
 
+        Gate::authorize('view', $stockOut);
+
         return $this->successResponse('Data berhasil diambil', $stockOut);
     }
 
@@ -123,6 +130,8 @@ class StockOutController extends Controller
         if (! $stockOut) {
             return $this->notFoundResponse();
         }
+
+        Gate::authorize('update', $stockOut);
 
         $validator = Validator::make($request->all(), [
             'quantity'         => ['sometimes', 'integer', 'min:1'],
@@ -184,6 +193,8 @@ class StockOutController extends Controller
             return $this->notFoundResponse();
         }
 
+        Gate::authorize('delete', $stockOut);
+
         $stockOut->item->increment('stock_quantity', $stockOut->quantity);
         $oldValues = $stockOut->toArray();
         $stockOut->delete();
@@ -203,6 +214,8 @@ class StockOutController extends Controller
         if (! $stockOut) {
             return $this->notFoundResponse();
         }
+
+        Gate::authorize('uploadProof', $stockOut);
 
         $validator = Validator::make($request->all(), [
             'attachment' => ['required', 'file', 'max:2048'],

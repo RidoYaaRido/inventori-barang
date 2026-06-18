@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -13,6 +14,8 @@ class CategoryController extends Controller
 {
     public function index(Request $request)
     {
+        Gate::authorize('viewAny', Category::class);
+
         $query = Category::query()
             ->withCount('items')
             ->latest();
@@ -29,9 +32,7 @@ class CategoryController extends Controller
 
     public function store(Request $request)
     {
-        if ($response = $this->ensureAdmin($request)) {
-            return $response;
-        }
+        Gate::authorize('create', Category::class);
 
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255', 'unique:categories,name'],
@@ -60,20 +61,20 @@ class CategoryController extends Controller
             return $this->notFoundResponse();
         }
 
+        Gate::authorize('view', $category);
+
         return $this->successResponse('Data berhasil diambil', $category);
     }
 
     public function update(Request $request, $id)
     {
-        if ($response = $this->ensureAdmin($request)) {
-            return $response;
-        }
-
         $category = Category::find($id);
 
         if (!$category) {
             return $this->notFoundResponse();
         }
+
+        Gate::authorize('update', $category);
 
         $validator = Validator::make($request->all(), [
             'name' => [
@@ -97,15 +98,13 @@ class CategoryController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        if ($response = $this->ensureAdmin($request)) {
-            return $response;
-        }
-
         $category = Category::withCount('items')->find($id);
 
         if (!$category) {
             return $this->notFoundResponse();
         }
+
+        Gate::authorize('delete', $category);
 
         $category->update(['is_active' => false]);
 

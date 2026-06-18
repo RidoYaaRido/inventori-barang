@@ -9,6 +9,7 @@ use App\Models\StockIn;
 use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -43,6 +44,8 @@ class StockInController extends Controller
     // ─────────────────────────────────────────────────────────────
     public function index()
     {
+        Gate::authorize('viewAny', StockIn::class);
+
         $stockIns = $this->ownedQuery()
             ->with(['item', 'user'])
             ->latest()
@@ -56,6 +59,8 @@ class StockInController extends Controller
     // ─────────────────────────────────────────────────────────────
     public function store(Request $request)
     {
+        Gate::authorize('create', StockIn::class);
+
         $validator = Validator::make($request->all(), [
             'item_id'          => ['required', 'exists:items,id'],
             'quantity'         => ['required', 'integer', 'min:1'],
@@ -99,6 +104,8 @@ class StockInController extends Controller
             return $this->notFoundResponse();
         }
 
+        Gate::authorize('view', $stockIn);
+
         return $this->successResponse('Data berhasil diambil', $stockIn);
     }
 
@@ -113,6 +120,8 @@ class StockInController extends Controller
         if (! $stockIn) {
             return $this->notFoundResponse();
         }
+
+        Gate::authorize('update', $stockIn);
 
         $validator = Validator::make($request->all(), [
             'quantity'         => ['sometimes', 'integer', 'min:1'],
@@ -175,6 +184,8 @@ class StockInController extends Controller
             return $this->notFoundResponse();
         }
 
+        Gate::authorize('delete', $stockIn);
+
         if ($stockIn->item->stock_quantity < $stockIn->quantity) {
             return $this->stockErrorResponse(
                 'Barang masuk tidak dapat dihapus karena stok akan menjadi negatif',
@@ -204,6 +215,8 @@ class StockInController extends Controller
         if (! $stockIn) {
             return $this->notFoundResponse();
         }
+
+        Gate::authorize('uploadProof', $stockIn);
 
         $validator = Validator::make($request->all(), [
             'attachment' => ['required', 'file', 'max:2048'],

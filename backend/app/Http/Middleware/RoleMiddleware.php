@@ -13,7 +13,7 @@ class RoleMiddleware
      *
      * @param  Closure(Request): (Response)  $next
      */
-    public function handle(Request $request, Closure $next, string $role)
+    public function handle(Request $request, Closure $next, string ...$roles)
     {
         if (!$request->user()) {
             return response()->json([
@@ -22,7 +22,7 @@ class RoleMiddleware
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        if ($request->user()->role !== $role) {
+        if (! in_array($request->user()->role, $roles, true)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Forbidden',

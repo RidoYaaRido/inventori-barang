@@ -35,8 +35,8 @@ Route::get('/health', function () {
 // API v1 routes
 Route::prefix('v1')->name('api.v1.')->group(function () {
     // Public routes
-    Route::post('/auth/login', [AuthController::class, 'login']);
-    Route::post('/auth/register', [AuthController::class, 'register']);
+    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+    Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
 
     // Protected routes (require authentication)
     Route::middleware('auth:sanctum')->group(function () {
@@ -44,9 +44,28 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
 
-        Route::get('/items/low-stock', [ItemController::class, 'lowStock']);
-        Route::post('/stock-ins/{id}/upload', [StockInController::class, 'uploadProof']);
-        Route::post('/stock-outs/{id}/upload', [StockOutController::class, 'uploadProof']);
+        Route::middleware('role:admin,staff')->group(function () {
+            Route::get('/items', [ItemController::class, 'index']);
+            Route::get('/items/low-stock', [ItemController::class, 'lowStock']);
+            Route::get('/items/{item}', [ItemController::class, 'show']);
+
+            Route::get('/categories', [CategoryController::class, 'index']);
+            Route::get('/categories/{category}', [CategoryController::class, 'show']);
+
+            Route::get('/stock-ins', [StockInController::class, 'index']);
+            Route::post('/stock-ins', [StockInController::class, 'store']);
+            Route::get('/stock-ins/{stockIn}', [StockInController::class, 'show']);
+            Route::put('/stock-ins/{stockIn}', [StockInController::class, 'update']);
+            Route::patch('/stock-ins/{stockIn}', [StockInController::class, 'update']);
+            Route::post('/stock-ins/{stockIn}/upload', [StockInController::class, 'uploadProof']);
+
+            Route::get('/stock-outs', [StockOutController::class, 'index']);
+            Route::post('/stock-outs', [StockOutController::class, 'store']);
+            Route::get('/stock-outs/{stockOut}', [StockOutController::class, 'show']);
+            Route::put('/stock-outs/{stockOut}', [StockOutController::class, 'update']);
+            Route::patch('/stock-outs/{stockOut}', [StockOutController::class, 'update']);
+            Route::post('/stock-outs/{stockOut}/upload', [StockOutController::class, 'uploadProof']);
+        });
 
         Route::middleware('role:admin')->group(function () {
             Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
@@ -62,15 +81,20 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('/admin/security-monitoring/summary', [SecurityMonitoringController::class, 'summary']);
             Route::get('/admin/security-monitoring/recent-logins', [SecurityMonitoringController::class, 'recentLogins']);
             Route::get('/admin/security-monitoring/suspicious-ips', [SecurityMonitoringController::class, 'suspiciousIps']);
-        });
 
-        // Resource routes
-        Route::apiResources([
-            'categories' => CategoryController::class,
-            'items' => ItemController::class,
-            'stock-ins' => StockInController::class,
-            'stock-outs' => StockOutController::class,
-        ]);
+            Route::post('/items', [ItemController::class, 'store']);
+            Route::put('/items/{item}', [ItemController::class, 'update']);
+            Route::patch('/items/{item}', [ItemController::class, 'update']);
+            Route::delete('/items/{item}', [ItemController::class, 'destroy']);
+
+            Route::post('/categories', [CategoryController::class, 'store']);
+            Route::put('/categories/{category}', [CategoryController::class, 'update']);
+            Route::patch('/categories/{category}', [CategoryController::class, 'update']);
+            Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
+
+            Route::delete('/stock-ins/{stockIn}', [StockInController::class, 'destroy']);
+            Route::delete('/stock-outs/{stockOut}', [StockOutController::class, 'destroy']);
+        });
     });
 });
 
